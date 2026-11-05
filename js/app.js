@@ -122,6 +122,11 @@
       drawnIds.add(card.id);
       addDrawnCardTile(card);
       drawCountEl.textContent = String(drawnIds.size);
+
+      if (remainingCards().length === 0) {
+        deckHintEl.textContent = "牌已經抽完囉，點「重新開始」再洗一次牌";
+        fanAreaEl.classList.add("hidden");
+      }
     }, 650);
   }
 
