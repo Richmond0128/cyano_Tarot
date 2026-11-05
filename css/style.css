@@ -289,14 +289,6 @@ body {
 
 /* ---- 金錢卦起卦 ---- */
 
-.table.hidden { display: none; }
-
-.mode-switch {
-  display: flex;
-  gap: 10px;
-  margin-top: 28px;
-}
-
 .mode-btn {
   font-family: inherit;
   letter-spacing: 0.1em;
@@ -309,7 +301,13 @@ body {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.mode-btn.active {
+.page-switch {
+  display: inline-block;
+  text-decoration: none;
+  margin-top: 16px;
+}
+
+.page-switch:hover {
   background: var(--ink);
   color: #fff;
   border-color: var(--ink);

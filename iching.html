@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>金錢卦起卦</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <h1 class="site-title">金錢卦起卦</h1>
+    <p class="site-subtitle">靜下心，擲銅錢、起卦</p>
+    <a href="index.html" class="mode-btn page-switch">← 塔羅占卜</a>
+  </header>
+
+  <main class="table" id="iching-section">
+
+    <div id="iching-form">
+      <section class="iching-input">
+        <h2 class="section-heading">在線起卦</h2>
+        <p class="iching-hint">輸入問題，擲銅錢起卦</p>
+        <textarea id="iching-question" class="iching-textarea" placeholder="想問的事情…" maxlength="80"></textarea>
+        <button id="btn-iching-cast" class="tool-btn" type="button">開始起卦</button>
+      </section>
+    </div>
+
+    <section id="iching-result" class="iching-result hidden"></section>
+
+  </main>
+
+  <script src="js/iching-data.js"></script>
+  <script src="js/iching.js"></script>
+</body>
+</html>
