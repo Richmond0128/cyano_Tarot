@@ -37,7 +37,7 @@ const RANKS = [
   { key: "king", zh: "國王", en: "King" },
 ];
 
-const CARD_BACK_IMAGE = "assets/images/塔羅牌/卡背.jpg";
+const CARD_BACK_IMAGE = "assets/images/塔羅牌/卡背/經典.jpg";
 
 function buildDeck() {
   const deck = [];
