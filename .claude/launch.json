@@ -4,8 +4,8 @@
     {
       "name": "tarot-site",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8343"],
-      "port": 8343
+      "runtimeArgs": ["-m", "http.server", "8360"],
+      "port": 8360
     }
   ]
 }
