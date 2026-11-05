@@ -371,6 +371,74 @@ body {
   color: var(--gold);
   letter-spacing: 0.1em;
 }
+.iching-title.pending {
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.2em;
+}
+
+.coin-tray {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0 6px;
+  transition: opacity 0.3s ease;
+}
+.coin-tray.fading { opacity: 0; }
+
+.coin-tray .coins-row {
+  display: flex;
+  gap: 18px;
+}
+
+.coin {
+  width: 52px;
+  height: 52px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease;
+}
+.coin.spinning { animation: coin-spin 0.3s linear infinite; }
+@keyframes coin-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+.coin-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  border: 2px solid var(--gold);
+}
+.coin-face.front { background: #f4e3b2; color: var(--ink); }
+.coin-face.back {
+  background: var(--ink);
+  color: #f4e3b2;
+  transform: rotateY(180deg);
+}
+
+.toss-label {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  min-height: 1.2em;
+}
+
+.yao-line.pending { color: #c9c7c0; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fade-in 0.35s ease; }
 
 .yao-table {
   display: flex;
@@ -450,13 +518,25 @@ body {
   letter-spacing: 0.05em;
 }
 .gua-ci { margin: 6px 0; line-height: 1.6; }
+.gua-xiang {
+  margin: 0 0 6px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
 
 .yao-ci-list {
   margin: 10px 0 0;
   padding-left: 1.2em;
-  line-height: 1.8;
+  line-height: 1.6;
 }
-.yao-ci-list li.changing {
+.yao-ci-list li { margin-bottom: 8px; }
+.yao-ci-main { }
+.yao-ci-xiang {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.yao-ci-list li.changing .yao-ci-main {
   color: var(--gold);
   font-weight: bold;
 }
