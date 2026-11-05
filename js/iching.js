@@ -169,21 +169,23 @@
     return row;
   }
 
-  function fillRow(row, lineValue, transformedYang) {
-    const cells = row.querySelectorAll(".yao-line");
+  // 第一階段：只亮出本卦這一爻，之卦欄位留著不動
+  function fillOriginalCell(row, lineValue) {
     const info = lineSymbolLabel(lineValue);
-
-    const originalCell = cells[0];
+    const originalCell = row.querySelectorAll(".yao-line")[0];
     originalCell.className = "yao-line " + (info.yang ? "yang" : "yin");
     originalCell.innerHTML = (info.yang ? "━━━━" : "━━&nbsp;&nbsp;━━") + (info.mark ? ` <b class="yao-mark">${info.mark}</b>` : "");
+    row.classList.add("revealed");
+  }
 
+  // 第二階段：本卦六爻都出來之後，才補上之卦欄位（動爻才畫箭頭）
+  function fillTransformedCell(row, lineValue, transformedYang) {
     row.querySelector(".yao-arrow").textContent = isChanging(lineValue) ? "→" : "";
 
-    const transformedCell = cells[1];
-    transformedCell.className = "yao-line " + (transformedYang ? "yang" : "yin") + (isChanging(lineValue) ? " changed" : " unchanged");
+    const transformedCell = row.querySelectorAll(".yao-line")[1];
+    transformedCell.className =
+      "yao-line fade-in " + (transformedYang ? "yang" : "yin") + (isChanging(lineValue) ? " changed" : " unchanged");
     transformedCell.innerHTML = transformedYang ? "━━━━" : "━━&nbsp;&nbsp;━━";
-
-    row.classList.add("revealed");
   }
 
   // 3枚銅錢的擲卦動畫：先翻轉，停下來後亮出這一爻的正反面與陰陽
@@ -348,6 +350,10 @@
     titleEl.textContent = "靜心擲卦中…";
     summary.appendChild(titleEl);
 
+    const stageEl = document.createElement("div");
+    stageEl.className = "iching-stage";
+    summary.appendChild(stageEl);
+
     resultEl.appendChild(summary);
 
     const tray = buildCoinTray();
@@ -368,9 +374,10 @@
     }
     resultEl.appendChild(table);
 
+    // 第一階段：只擲本卦六爻，一爻一爻來
     for (let i = 0; i < 6; i++) {
       await tray.flip(result.tosses[i]);
-      fillRow(rows[i], result.lines[i], result.transformed.binary[i] === "1");
+      fillOriginalCell(rows[i], result.lines[i]);
       await delay(200);
     }
 
@@ -379,9 +386,29 @@
     tray.el.remove();
 
     titleEl.classList.remove("pending");
-    titleEl.textContent = result.hasChange
-      ? `${result.original.number}．${result.original.name} → ${result.transformed.number}．${result.transformed.name}`
-      : `${result.original.number}．${result.original.name}（六爻不變）`;
+    titleEl.classList.add("pop-in");
+    titleEl.textContent = `本卦：${result.original.number}．${result.original.name}`;
+
+    if (!result.hasChange) {
+      const note = document.createElement("p");
+      note.className = "iching-no-change fade-in";
+      note.textContent = "六爻不變";
+      stageEl.appendChild(note);
+    } else {
+      await delay(550);
+
+      // 第二階段：本卦整卦出來後，才跳之卦——把每一爻的之卦欄位補上
+      for (let i = 0; i < 6; i++) {
+        fillTransformedCell(rows[i], result.lines[i], result.transformed.binary[i] === "1");
+        await delay(120);
+      }
+
+      await delay(250);
+      const transformedTitle = document.createElement("h2");
+      transformedTitle.className = "iching-title transformed pop-in";
+      transformedTitle.textContent = `之卦：${result.transformed.number}．${result.transformed.name}`;
+      stageEl.appendChild(transformedTitle);
+    }
 
     renderJudgmentAndTexts(result);
 
