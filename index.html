@@ -13,31 +13,80 @@
     <p class="site-subtitle">靜下心，洗牌、選牌</p>
   </header>
 
-  <main class="table">
+  <nav class="tarot-submode-switch">
+    <button id="tarot-mode-full" class="submode-btn active" type="button">完整手洗體驗版</button>
+    <button id="tarot-mode-quick" class="submode-btn" type="button">快速版</button>
+  </nav>
+
+  <!-- ===================== 完整手洗體驗版 ===================== -->
+  <main class="table" id="tarot-full-section">
 
     <section class="toolbar">
-      <button id="btn-shuffle" class="tool-btn" type="button">洗牌</button>
-      <button id="btn-spread" class="tool-btn" type="button">攤牌選牌</button>
-      <button id="btn-reset" class="tool-btn" type="button">重新開始</button>
-      <span class="draw-count">已抽 <span id="draw-count-num">0</span> 張</span>
+      <button id="btn-full-shuffle" class="tool-btn" type="button">洗牌</button>
+      <button id="btn-full-arrange" class="tool-btn" type="button">整牌</button>
+      <button id="btn-full-cut" class="tool-btn" type="button">切牌</button>
+      <button id="btn-full-fan" class="tool-btn" type="button">開扇</button>
+      <button id="btn-full-reset" class="tool-btn" type="button">重新開始</button>
+      <span class="draw-count">已抽 <span id="full-draw-count-num">0</span> 張</span>
     </section>
 
-    <section id="deck-area" class="deck-area">
-      <div id="deck-stack" class="deck-stack"></div>
-      <p id="deck-hint" class="deck-hint">請先洗牌，再點選「攤牌選牌」</p>
+    <section id="full-deck-area" class="deck-area">
+      <div id="full-deck-stack" class="deck-stack"></div>
+      <p id="full-deck-hint" class="deck-hint">請先洗牌，再點選「開扇」選牌</p>
     </section>
 
-    <section id="fan-area" class="fan-area hidden">
-    </section>
+    <section id="full-cut-area" class="cut-area hidden"></section>
 
-    <section id="drawn-area" class="drawn-area">
+    <section id="full-fan-area" class="fan-area hidden"></section>
+
+    <section class="drawn-area">
       <h2 class="drawn-title">已抽出的牌</h2>
-      <div id="drawn-cards" class="drawn-cards"></div>
+      <div id="full-drawn-cards" class="drawn-cards"></div>
+    </section>
+
+  </main>
+
+  <!-- ===================== 快速版 ===================== -->
+  <main class="table hidden" id="tarot-quick-section">
+
+    <section id="quick-setup" class="quick-setup">
+      <p class="quick-setup-hint">這次想抽幾張牌？</p>
+      <div class="quick-count-buttons">
+        <button class="quick-count-btn" type="button" data-count="1">1 張</button>
+        <button class="quick-count-btn active" type="button" data-count="3">3 張</button>
+        <button class="quick-count-btn" type="button" data-count="5">5 張</button>
+      </div>
+      <div class="quick-count-custom">
+        <label for="quick-count-input">或自訂張數</label>
+        <input id="quick-count-input" type="number" min="1" max="78" value="3" />
+        <button id="btn-quick-start" class="tool-btn" type="button">開始抽牌</button>
+      </div>
+    </section>
+
+    <section id="quick-table" class="quick-table hidden">
+      <p id="quick-progress-text" class="deck-hint"></p>
+      <div id="quick-fan-area" class="fan-area"></div>
+    </section>
+
+    <section id="quick-drawn-area" class="drawn-area hidden">
+      <h2 class="drawn-title">已抽出的牌</h2>
+      <div id="quick-drawn-cards" class="drawn-cards"></div>
+
+      <div id="quick-more-prompt" class="quick-more-prompt hidden">
+        <p>要不要再多抽一張？</p>
+        <button id="btn-quick-more" class="tool-btn" type="button">再抽一張</button>
+        <button id="btn-quick-finish" class="tool-btn tool-btn-secondary" type="button">完成，不再抽了</button>
+      </div>
+
+      <button id="btn-quick-restart" class="tool-btn tool-btn-secondary quick-restart-btn" type="button">重新開始</button>
     </section>
 
   </main>
 
   <script src="js/cards.js"></script>
+  <script src="js/tarot-shared.js"></script>
+  <script src="js/mode-full.js"></script>
+  <script src="js/mode-quick.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
