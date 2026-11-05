@@ -416,12 +416,11 @@ body {
 
   .table { padding: 12px 10px 56px; }
 
-  .toolbar { gap: 8px; margin: 20px 0; }
+  .toolbar { gap: 8px; margin: 20px 0; justify-content: center; }
   .tool-btn {
-    padding: 11px 16px;
+    padding: 11px 14px;
     font-size: 0.85rem;
-    flex: 1 1 auto;
-    min-width: 0;
+    flex: 0 0 auto;
   }
   .draw-count {
     width: 100%;

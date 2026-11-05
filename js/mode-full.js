@@ -28,7 +28,7 @@ function initFullMode() {
   }
 
   function showOnly(view) {
-    // view: "stack" | "cut" | "fan"
+    // view: "stack" | "cut" | "fan" | "none"
     deckStackEl.classList.toggle("hidden", view !== "stack");
     cutAreaEl.classList.toggle("hidden", view !== "cut");
     fanAreaEl.classList.toggle("hidden", view !== "fan");
@@ -131,12 +131,12 @@ function initFullMode() {
     const untouched = order.filter((c) => !cutIds.has(c.id));
     order = untouched.concat(back, front);
 
-    deckHintEl.textContent = "切好牌了";
     setManualShuffle(false);
     showOnly("stack");
     renderStack();
     deckStackEl.classList.add("shuffling");
     window.setTimeout(() => deckStackEl.classList.remove("shuffling"), 300);
+    deckHintEl.textContent = "切好牌了";
   }
 
   function onCutClick() {
@@ -149,9 +149,8 @@ function initFullMode() {
   function renderFan() {
     const cards = remainingCards();
     if (cards.length === 0) {
+      showOnly("none");
       deckHintEl.textContent = "牌已經抽完囉，點「重新開始」再洗一次牌";
-      showOnly("stack");
-      deckStackEl.classList.add("hidden");
       return;
     }
     const entries = renderFanLayout(fanAreaEl, cards);
