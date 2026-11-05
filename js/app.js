@@ -27,6 +27,19 @@
     return order.filter((card) => !drawnIds.has(card.id));
   }
 
+  // 圖片數量多時瀏覽器/伺服器偶爾會有連線被拒的情況，失敗後重試一次
+  function loadImageWithRetry(img, src) {
+    let retried = false;
+    img.onerror = () => {
+      if (retried) return;
+      retried = true;
+      window.setTimeout(() => {
+        img.src = src + "?retry=1";
+      }, 400);
+    };
+    img.src = src;
+  }
+
   function renderStack() {
     deckStackEl.innerHTML = "";
     const layers = 5;
@@ -36,8 +49,8 @@
       div.style.transform = `translate(${i * -1.2}px, ${i * -1.2}px)`;
       div.style.zIndex = String(layers - i);
       const img = document.createElement("img");
-      img.src = CARD_BACK_IMAGE;
       img.alt = "塔羅牌背";
+      loadImageWithRetry(img, CARD_BACK_IMAGE);
       div.appendChild(img);
       deckStackEl.appendChild(div);
     }
@@ -76,14 +89,15 @@
       const back = document.createElement("div");
       back.className = "fan-card-face back";
       const backImg = document.createElement("img");
-      backImg.src = CARD_BACK_IMAGE;
       backImg.alt = "塔羅牌背";
+      loadImageWithRetry(backImg, CARD_BACK_IMAGE);
       back.appendChild(backImg);
 
+      // 正面圖片先不載入，等真的被抽到才載入，避免一次展開78張牌
+      // 同時發出上百個圖片請求把瀏覽器/伺服器塞爆，導致偶發圖片出不來
       const front = document.createElement("div");
       front.className = "fan-card-face front";
       const frontImg = document.createElement("img");
-      frontImg.src = card.image;
       frontImg.alt = card.nameZh;
       front.appendChild(frontImg);
 
@@ -91,15 +105,16 @@
       inner.appendChild(front);
       el.appendChild(inner);
 
-      el.addEventListener("click", () => drawCard(card, el));
+      el.addEventListener("click", () => drawCard(card, el, frontImg));
 
       fanAreaEl.appendChild(el);
     });
   }
 
-  function drawCard(card, el) {
+  function drawCard(card, el, frontImg) {
     if (el.classList.contains("flipping") || drawnIds.has(card.id)) return;
 
+    loadImageWithRetry(frontImg, card.image);
     el.classList.add("flipping");
 
     window.setTimeout(() => {
@@ -115,8 +130,8 @@
     tile.className = "drawn-card";
 
     const img = document.createElement("img");
-    img.src = card.image;
     img.alt = card.nameZh;
+    loadImageWithRetry(img, card.image);
 
     const label = document.createElement("div");
     label.className = "card-label";
@@ -147,6 +162,7 @@
   }
 
   function spread() {
+    deckStackEl.classList.add("hidden");
     fanAreaEl.classList.remove("hidden");
     deckHintEl.textContent = "點一張牌把它抽出來";
     renderFan();
@@ -159,6 +175,7 @@
     drawnCardsEl.innerHTML = "";
     fanAreaEl.classList.add("hidden");
     fanAreaEl.innerHTML = "";
+    deckStackEl.classList.remove("hidden");
     deckHintEl.textContent = "請先洗牌，再點選「攤牌選牌」";
     renderStack();
   }

@@ -102,6 +102,8 @@ body {
   height: var(--card-h);
 }
 
+.deck-stack.hidden { display: none; }
+
 .deck-stack .stack-card {
   position: absolute;
   top: 0; left: 0;
