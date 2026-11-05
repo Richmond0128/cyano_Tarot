@@ -1,4 +1,4 @@
-// 偉特塔羅 78 張牌資料（圖片來源見 assets/images/tarot/LICENSE_README.txt）
+// 偉特塔羅 78 張牌資料（圖片來源見 assets/images/塔羅牌/LICENSE_README.txt）
 
 const MAJOR_ARCANA = [
   "愚者", "魔術師", "女祭司", "女皇", "皇帝", "教皇", "戀人", "戰車",
@@ -37,7 +37,7 @@ const RANKS = [
   { key: "king", zh: "國王", en: "King" },
 ];
 
-const CARD_BACK_IMAGE = "assets/images/tarot/card_backs/classic.jpg";
+const CARD_BACK_IMAGE = "assets/images/塔羅牌/卡背.jpg";
 
 function buildDeck() {
   const deck = [];
@@ -48,17 +48,18 @@ function buildDeck() {
       id: `major-${num}`,
       nameZh: zhName,
       nameEn: MAJOR_ARCANA_EN[i],
-      image: `assets/images/tarot/major_arcana/${num}.jpg`,
+      image: `assets/images/塔羅牌/大阿爾克那/${num}_${zhName}.jpg`,
     });
   });
 
   SUITS.forEach((suit) => {
-    RANKS.forEach((rank) => {
+    RANKS.forEach((rank, i) => {
+      const num = String(i + 1).padStart(2, "0");
       deck.push({
         id: `${suit.key}-${rank.key}`,
         nameZh: `${suit.zh}${rank.zh}`,
         nameEn: `${rank.en} of ${suit.en}`,
-        image: `assets/images/tarot/minor_arcana/${suit.key}/${rank.key}.jpg`,
+        image: `assets/images/塔羅牌/${suit.zh}/${num}_${rank.zh}.jpg`,
       });
     });
   });

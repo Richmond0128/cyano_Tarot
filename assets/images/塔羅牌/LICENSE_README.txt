@@ -23,10 +23,13 @@
   - 完整授權細節與逐檔宣告請見原始 repo 的 REUSE.toml 與 LICENSES/ 目錄。
 
 目錄結構:
-  major_arcana/00.jpg ~ 21.jpg        — 大牌 22 張（愚者=00 ... 世界=21）
-  minor_arcana/{wands,cups,swords,pentacles}/
-      ace, two, three, four, five, six, seven, eight, nine, ten,
-      page, knight, queen, king.jpg   — 小牌 4 花色 x 14 張 = 56 張
-  card_backs/classic.jpg              — 牌背圖
-  names/en.toml                      — 英文牌名對照表
+  大阿爾克那/00_愚者.jpg ~ 21_世界.jpg   — 大牌 22 張
+  權杖、聖杯、寶劍、錢幣/
+      01_一 ~ 10_十、11_侍從、12_騎士、13_皇后、14_國王.jpg
+                                       — 小牌 4 花色 x 14 張 = 56 張
+  卡背.jpg                            — 牌背圖
+  名稱對照.toml                       — 英文牌名與圖說對照表
   deck.toml                          — 牌組 metadata
+
+  （原始英文檔名與資料夾對照請見 名稱對照.toml；
+    此結構於 2026-11-05 重新整理為中文檔名，方便日後擴充其他占卜功能）
