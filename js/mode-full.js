@@ -1,24 +1,26 @@
-// 完整手洗體驗版：洗牌（可用滑鼠手搓打亂）、整牌、切牌、開扇選牌
+// 塔羅牌桌：洗牌（可用滑鼠/手指手搓打亂）、整牌、切牌、開扇選牌、快速抽一張
 
-function initFullMode() {
+function initTarotTable() {
   const fullDeck = buildDeck();
   let order = shuffledCopy(fullDeck);
   const drawnIds = new Set();
   const reversedIds = new Set(); // 手搓洗牌時會隨機把牌翻面，記住哪些牌現在是逆位
+  const drawnList = []; // 依抽出順序記錄 {card, reversed}，給AI解牌提示詞用
 
-  const deckAreaEl = document.getElementById("full-deck-area");
-  const deckStackEl = document.getElementById("full-deck-stack");
-  const deckHintEl = document.getElementById("full-deck-hint");
-  const cutAreaEl = document.getElementById("full-cut-area");
-  const fanAreaEl = document.getElementById("full-fan-area");
-  const drawnCardsEl = document.getElementById("full-drawn-cards");
-  const drawCountEl = document.getElementById("full-draw-count-num");
+  const deckAreaEl = document.getElementById("deck-area");
+  const deckStackEl = document.getElementById("deck-stack");
+  const deckHintEl = document.getElementById("deck-hint");
+  const cutAreaEl = document.getElementById("cut-area");
+  const fanAreaEl = document.getElementById("fan-area");
+  const drawnCardsEl = document.getElementById("drawn-cards");
+  const drawCountEl = document.getElementById("draw-count-num");
 
-  const btnShuffle = document.getElementById("btn-full-shuffle");
-  const btnArrange = document.getElementById("btn-full-arrange");
-  const btnCut = document.getElementById("btn-full-cut");
-  const btnFan = document.getElementById("btn-full-fan");
-  const btnReset = document.getElementById("btn-full-reset");
+  const btnShuffle = document.getElementById("btn-shuffle");
+  const btnArrange = document.getElementById("btn-arrange");
+  const btnCut = document.getElementById("btn-cut");
+  const btnFan = document.getElementById("btn-fan");
+  const btnReset = document.getElementById("btn-reset");
+  const btnQuickDrawOne = document.getElementById("btn-quick-draw-one");
 
   let manualShuffleOn = false;
   let dragging = false;
@@ -257,36 +259,42 @@ function initFullMode() {
     renderCutRow();
   }
 
+  let currentFanEntries = [];
+
   function renderFan(animate) {
     const cards = remainingCards();
     if (cards.length === 0) {
       showOnly("none");
       deckHintEl.textContent = "牌已經抽完囉，點「重新開始」再洗一次牌";
-      return;
+      currentFanEntries = [];
+      return currentFanEntries;
     }
-    const entries = renderFanLayout(fanAreaEl, cards, animate);
-    entries.forEach(({ el, card, frontImg }) => {
-      el.addEventListener("click", () => drawCard(card, el, frontImg));
-    });
+    currentFanEntries = renderFanLayout(fanAreaEl, cards, animate);
+    return currentFanEntries;
   }
+
+  // 手勢只需要綁一次，renderFan() 每次重攤牌都會更新 currentFanEntries 讓它讀到最新的牌
+  attachFanGestures(fanAreaEl, () => currentFanEntries, drawCard);
 
   function onFanClick() {
     setManualShuffle(false);
     showOnly("fan");
-    deckHintEl.textContent = "點一張牌把它抽出來";
+    deckHintEl.textContent = "滑過牌會凸起，往上一撥或直接點一下就能抽出來";
     renderFan(true);
   }
 
   function drawCard(card, el, frontImg) {
     if (el.classList.contains("flipping") || drawnIds.has(card.id)) return;
 
+    const isReversed = reversedIds.has(card.id);
     loadImageWithRetry(frontImg, card.image);
     el.classList.add("flipping");
 
     window.setTimeout(() => {
       el.classList.add("drawn");
       drawnIds.add(card.id);
-      drawnCardsEl.appendChild(createDrawnTile(card, reversedIds.has(card.id)));
+      drawnList.push({ card, reversed: isReversed });
+      drawnCardsEl.appendChild(createDrawnTile(card, isReversed));
       drawCountEl.textContent = String(drawnIds.size);
 
       if (remainingCards().length === 0) {
@@ -296,10 +304,27 @@ function initFullMode() {
     }, 650);
   }
 
+  // 快速抽一張：不管現在牌桌是什麼狀態，直接洗一次、開扇、隨機抽一張出來
+  function onQuickDrawOneClick() {
+    if (remainingCards().length === 0) {
+      deckHintEl.textContent = "牌已經抽完囉，點「重新開始」再洗一次牌";
+      return;
+    }
+    setManualShuffle(false);
+    shuffleOnce();
+    showOnly("fan");
+    deckHintEl.textContent = "幫你快速抽了一張";
+    const entries = renderFan(false);
+    if (entries.length === 0) return;
+    const pick = entries[Math.floor(Math.random() * entries.length)];
+    window.setTimeout(() => drawCard(pick.card, pick.el, pick.frontImg), 60);
+  }
+
   function onResetClick() {
     order = shuffledCopy(fullDeck);
     drawnIds.clear();
     reversedIds.clear();
+    drawnList.length = 0;
     drawCountEl.textContent = "0";
     drawnCardsEl.innerHTML = "";
     setManualShuffle(false);
@@ -313,6 +338,7 @@ function initFullMode() {
   btnCut.addEventListener("click", onCutClick);
   btnFan.addEventListener("click", onFanClick);
   btnReset.addEventListener("click", onResetClick);
+  btnQuickDrawOne.addEventListener("click", onQuickDrawOneClick);
 
   let resizeTimer = null;
   window.addEventListener("resize", () => {
@@ -322,4 +348,8 @@ function initFullMode() {
   });
 
   renderStack();
+
+  // 給AI解牌提示詞用：讀取目前已抽出的牌（依抽出順序）
+  window.TarotState = window.TarotState || {};
+  window.TarotState.getDrawn = () => drawnList.map((d) => ({ card: d.card, reversed: d.reversed }));
 }

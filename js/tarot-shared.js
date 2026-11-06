@@ -60,6 +60,9 @@ function renderFanLayout(containerEl, cards, animate) {
   const maxSpacing = containerWidth < 500 ? 6 : 11;
   // 扇形總寬度（卡片寬度 + 牌與牌的間距總和）要留在容器內，才不會讓頁面出現橫向捲軸
   const spacing = Math.min(maxSpacing, Math.max(2, ((containerWidth - cardWidth) * 0.92) / n));
+  // 整條牌還是橫向排列（左到右），但底線改成一個緩緩的S彎，不是死板的直線，
+  // 也不是左右對稱隆起的弧形——一端略高、一端略低，中間平滑過渡
+  const waveAmplitude = containerWidth < 500 ? 20 : 38;
 
   const entries = [];
 
@@ -67,16 +70,18 @@ function renderFanLayout(containerEl, cards, animate) {
     const offset = i - mid;
     const angle = offset * angleStep;
     const x = offset * spacing;
-    // 不追求弧度了，牌的底邊排成一直線，只靠旋轉角度做出展開的感覺
-    const finalTransform = `translateX(${x}px) rotate(${angle}deg)`;
+    const wavePhase = mid > 0 ? (offset / mid) * (Math.PI / 2) : 0;
+    const y = waveAmplitude * Math.sin(wavePhase);
+    const finalTransform = `translateX(${x}px) translateY(${y}px) rotate(${angle}deg)`;
 
     const el = document.createElement("div");
     el.className = "fan-card";
     // 開扇是從左到右把牌推出來，所以越右邊的牌疊得越上面（最後推出的那張在最上層）
-    el.style.zIndex = String(i + 1);
+    const baseZIndex = i + 1;
+    el.style.zIndex = String(baseZIndex);
 
     if (animate) {
-      el.style.transform = "translateX(0px) rotate(0deg)";
+      el.style.transform = "translateX(0px) translateY(0px) rotate(0deg)";
       el.style.transition = "transform 0.32s cubic-bezier(.2,.7,.3,1)";
       el.style.transitionDelay = `${Math.min(i, 60) * 4}ms`;
       // 用 setTimeout 而不是 requestAnimationFrame 來觸發展開：分頁被切到背景、
@@ -113,10 +118,216 @@ function renderFanLayout(containerEl, cards, animate) {
     el.appendChild(inner);
 
     containerEl.appendChild(el);
-    entries.push({ el, card, frontImg });
+    entries.push({ el, card, frontImg, baseTransform: finalTransform, baseZIndex });
   });
 
   return entries;
+}
+
+// 幫扇形牌陣加上「滑過會凸起、往上一撥就抽出」的手勢，桌面滑鼠跟手機觸控都適用。
+// 單純點一下（沒什麼位移）還是會直接抽牌，維持原本最簡單的操作方式。
+// 只需要在容器建立時呼叫一次；每次重新攤牌時呼叫 getEntries() 都會拿到最新那組卡片，
+// 不用每次攤牌都重新綁一次事件（不然監聽器會越疊越多）。
+function attachFanGestures(containerEl, getEntries, onDraw) {
+  const BULGE_LIFT = "translateY(-16px) scale(1.05)";
+  const SWIPE_UP_THRESHOLD = 34;
+  const TAP_MOVE_TOLERANCE = 12;
+
+  let active = null; // entry 目前被手指/滑鼠蓋住、凸起的那張
+  let startX = 0;
+  let startY = 0;
+  let maxMoveDist = 0;
+
+  function findEntryAt(x, y) {
+    const el = document.elementFromPoint(x, y);
+    const cardEl = el && el.closest ? el.closest(".fan-card") : null;
+    if (!cardEl) return null;
+    return getEntries().find((en) => en.el === cardEl) || null;
+  }
+
+  function setActive(entry) {
+    if (active === entry) return;
+    if (active) {
+      active.el.style.zIndex = String(active.baseZIndex);
+      active.el.style.transform = active.baseTransform;
+    }
+    active = entry;
+    if (active) {
+      // 開扇展開動畫會在每張牌的 transition 上留下不同的 delay，蓋過去才不會讓
+      // 凸起的反應跟著那個殘留的 delay 慢半拍
+      active.el.style.transition = "transform 0.15s ease";
+      active.el.style.transitionDelay = "0ms";
+      active.el.style.zIndex = "5000";
+      active.el.style.transform = active.baseTransform + " " + BULGE_LIFT;
+    }
+  }
+
+  function commitDraw(entry) {
+    setActive(null);
+    onDraw(entry.card, entry.el, entry.frontImg);
+  }
+
+  containerEl.addEventListener("pointerdown", (e) => {
+    startX = e.clientX;
+    startY = e.clientY;
+    maxMoveDist = 0;
+    setActive(findEntryAt(e.clientX, e.clientY));
+  });
+
+  containerEl.addEventListener("pointermove", (e) => {
+    if (!active && e.buttons === 0) return; // 沒按著就滑過去不用反應，省得整排一直在跳
+    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    maxMoveDist = Math.max(maxMoveDist, dist);
+
+    const entry = findEntryAt(e.clientX, e.clientY);
+    if (entry !== active) {
+      setActive(entry);
+      // 換了一張牌就重新算這張牌自己的上滑距離，不然會沿用剛剛那張牌已經
+      // 累積到的上滑量，手指還沒往上動就把新的牌也一起判定成「上滑抽出」
+      startX = e.clientX;
+      startY = e.clientY;
+      return;
+    }
+    if (active) {
+      const upDist = startY - e.clientY;
+      if (upDist > SWIPE_UP_THRESHOLD) {
+        commitDraw(active);
+      }
+    }
+  });
+
+  function onRelease(e) {
+    if (!active) return;
+    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    if (Math.max(dist, maxMoveDist) <= TAP_MOVE_TOLERANCE) {
+      // 幾乎沒有移動，當成單純點一下，直接抽牌
+      commitDraw(active);
+    } else {
+      setActive(null);
+    }
+  }
+
+  containerEl.addEventListener("pointerup", onRelease);
+  containerEl.addEventListener("pointercancel", () => setActive(null));
+}
+
+// 通用的底部彈出面板：蓋版 + 面板，點蓋版可關閉
+function openSheet(contentEl) {
+  const overlay = document.createElement("div");
+  overlay.className = "sheet-overlay";
+
+  const panel = document.createElement("div");
+  panel.className = "sheet-panel";
+  panel.appendChild(contentEl);
+  overlay.appendChild(panel);
+
+  function close() {
+    overlay.classList.remove("open");
+    window.setTimeout(() => {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }, 200);
+  }
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+
+  document.body.appendChild(overlay);
+  window.setTimeout(() => overlay.classList.add("open"), 20);
+
+  return { overlay, close };
+}
+
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = "iching-toast";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  window.setTimeout(() => toast.classList.add("show"), 20);
+  window.setTimeout(() => {
+    toast.classList.remove("show");
+    window.setTimeout(() => toast.remove(), 300);
+  }, 2400);
+}
+
+// 純圖示按鈕（洗牌/整牌/切牌/開扇/重新開始…）沒有文字，桌面滑鼠移過去時
+// title 屬性會跳出瀏覽器原生的提示文字；手機沒有「移過去」這件事，所以改成
+// 長按才顯示文字說明，而且長按不應該順便觸發按鈕本身的動作——短按/輕點還是照常觸發。
+function attachLongPressTooltip(btn) {
+  const label = btn.getAttribute("title") || btn.getAttribute("aria-label");
+  if (!label) return;
+
+  const LONG_PRESS_MS = 480;
+  let timer = null;
+  let longPressed = false;
+  let tooltipEl = null;
+
+  function showTooltip() {
+    longPressed = true;
+    tooltipEl = document.createElement("div");
+    tooltipEl.className = "icon-btn-tooltip";
+    tooltipEl.textContent = label;
+    document.body.appendChild(tooltipEl);
+    const rect = btn.getBoundingClientRect();
+    tooltipEl.style.left = `${rect.left + rect.width / 2}px`;
+    tooltipEl.style.top = `${rect.top - 8}px`;
+    window.setTimeout(() => {
+      if (tooltipEl) tooltipEl.classList.add("show");
+    }, 10);
+  }
+
+  function hideTooltip() {
+    if (!tooltipEl) return;
+    const el = tooltipEl;
+    tooltipEl = null;
+    el.classList.remove("show");
+    window.setTimeout(() => el.remove(), 150);
+  }
+
+  btn.addEventListener(
+    "touchstart",
+    () => {
+      longPressed = false;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(showTooltip, LONG_PRESS_MS);
+    },
+    { passive: true }
+  );
+
+  btn.addEventListener(
+    "touchmove",
+    () => {
+      window.clearTimeout(timer);
+    },
+    { passive: true }
+  );
+
+  btn.addEventListener("touchend", (e) => {
+    window.clearTimeout(timer);
+    if (longPressed) {
+      e.preventDefault(); // 擋掉長按放開後緊接著補上的那個 click，避免又順便觸發按鈕動作
+      window.setTimeout(hideTooltip, 900);
+    }
+  });
+
+  btn.addEventListener("touchcancel", () => {
+    window.clearTimeout(timer);
+    hideTooltip();
+  });
+
+  // 以防某些瀏覽器 touchend 的 preventDefault 沒能擋下 click，這裡用捕獲階段再擋一次，
+  // 搶在按鈕自己的 click 處理函式（例如觸發洗牌）之前執行
+  btn.addEventListener(
+    "click",
+    (e) => {
+      if (longPressed) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        longPressed = false;
+      }
+    },
+    true
+  );
 }
 
 // 建立一張「已抽出的牌」卡片，isReversed 為 true 時圖片會倒轉並標示逆位

@@ -74,6 +74,12 @@ body {
   justify-content: center;
 }
 
+.quick-draw-row {
+  display: flex;
+  justify-content: center;
+  margin: -16px 0 24px;
+}
+
 .tool-btn {
   font-family: inherit;
   letter-spacing: 0.1em;
@@ -114,6 +120,25 @@ body {
 }
 
 .tool-btn-icon svg { display: block; }
+
+/* 手機長按圖示按鈕時跳出的文字說明（桌面版靠 title 屬性的原生提示就夠了） */
+.icon-btn-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  background: var(--ink);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.icon-btn-tooltip.show { opacity: 1; }
 
 .tarot-submode-switch {
   display: flex;
@@ -236,7 +261,6 @@ body {
 
 .fan-card:hover {
   box-shadow: 0 6px 14px rgba(0,0,0,0.3);
-  z-index: 50 !important;
 }
 
 .fan-card.drawn {
