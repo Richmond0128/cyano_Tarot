@@ -84,6 +84,26 @@
     return tosses;
   }
 
+  // 逐爻投擲用：一次只決定一爻，但仍要讓6次下來動爻總數剛好等於 forcedCount
+  // （序列式抽樣：第i爻是動爻的機率 = 剩下還要幾個動爻 / 剩下還有幾爻沒擲）
+  function createChangingPlanner(forcedCount) {
+    let remainingSlots = 6;
+    let remainingNeeded = forcedCount;
+    return function next() {
+      const changing = Math.random() < remainingNeeded / remainingSlots;
+      remainingSlots -= 1;
+      if (changing) remainingNeeded -= 1;
+      return changing;
+    };
+  }
+
+  function tossLineForManual(planner) {
+    if (!planner) return tossLine();
+    const changing = planner();
+    const value = changing ? (Math.random() < 0.5 ? 6 : 9) : Math.random() < 0.5 ? 7 : 8;
+    return { value, faces: facesForValue(value) };
+  }
+
   function binaryOf(lines, transform) {
     return lines
       .map((v) => {
@@ -148,9 +168,9 @@
     return { rule: "六爻皆變：以之卦卦辭為斷", primary: { source: "之卦卦辭", text: transformedHex.guaci } };
   }
 
-  function castHexagram(question) {
-    const forcedCount = detectTestChangingCount(question || "");
-    const tosses = forcedCount === null ? castLines() : castLinesWithChangingCount(forcedCount);
+  // 給定已經擲好的6個toss（不管是自動一次擲完還是逐爻投擲收集來的），組出完整結果
+  // method 只是記錄這次是用哪種起卦方式產生的，給AI解卦提示詞用
+  function buildResult(question, tosses, method) {
     const lines = tosses.map((t) => t.value);
     const changingIndices = [];
     lines.forEach((v, i) => {
@@ -163,6 +183,7 @@
     return {
       question: question || "",
       time: new Date(),
+      method: method || "auto",
       tosses,
       lines,
       changingIndices,
@@ -171,6 +192,12 @@
       transformed: transformedHex,
       judgment: judge(lines, changingIndices, originalHex, transformedHex),
     };
+  }
+
+  function castHexagram(question) {
+    const forcedCount = detectTestChangingCount(question || "");
+    const tosses = forcedCount === null ? castLines() : castLinesWithChangingCount(forcedCount);
+    return buildResult(question, tosses, "auto");
   }
 
   function lineSymbolLabel(value) {
@@ -209,6 +236,7 @@
 
   const questionInput = document.getElementById("iching-question");
   const resultEl = document.getElementById("iching-result");
+  const manualSectionEl = document.getElementById("manual-cast-section");
   const btnCast = document.getElementById("btn-iching-cast");
   const btnQuickCast = document.getElementById("btn-iching-quick-cast");
   const coinStyleToggle = document.getElementById("coin-style-toggle");
@@ -330,6 +358,92 @@
     return { el, flip };
   }
 
+  // 通用的底部彈出面板：蓋版 + 面板，點蓋版可關閉
+  function openSheet(contentEl) {
+    const overlay = document.createElement("div");
+    overlay.className = "sheet-overlay";
+
+    const panel = document.createElement("div");
+    panel.className = "sheet-panel";
+    panel.appendChild(contentEl);
+    overlay.appendChild(panel);
+
+    function close() {
+      overlay.classList.remove("open");
+      window.setTimeout(() => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      }, 200);
+    }
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
+
+    document.body.appendChild(overlay);
+    window.requestAnimationFrame(() => overlay.classList.add("open"));
+
+    return { overlay, close };
+  }
+
+  function showToast(message) {
+    const toast = document.createElement("div");
+    toast.className = "iching-toast";
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    window.requestAnimationFrame(() => toast.classList.add("show"));
+    window.setTimeout(() => {
+      toast.classList.remove("show");
+      window.setTimeout(() => toast.remove(), 300);
+    }, 2400);
+  }
+
+  // 「卦象正在形成…」列表的一列：未擲時 value 傳 null
+  function createFormingRow(label, value) {
+    const row = document.createElement("div");
+    row.className = "forming-row";
+
+    const labelEl = document.createElement("span");
+    labelEl.className = "forming-label";
+    labelEl.textContent = label;
+    row.appendChild(labelEl);
+
+    const iconEl = document.createElement("span");
+    iconEl.className = "forming-icon";
+    row.appendChild(iconEl);
+
+    const stateEl = document.createElement("span");
+    stateEl.className = "forming-state";
+    row.appendChild(stateEl);
+
+    row._iconEl = iconEl;
+    row._stateEl = stateEl;
+    updateFormingRow(row, value);
+    return row;
+  }
+
+  function updateFormingRow(row, value) {
+    const iconEl = row._iconEl;
+    const stateEl = row._stateEl;
+
+    if (value === null) {
+      iconEl.innerHTML = "";
+      iconEl.className = "forming-icon";
+      stateEl.textContent = "未擲";
+      stateEl.className = "forming-state unrevealed";
+      return;
+    }
+
+    const info = lineSymbolLabel(value);
+    const colorCls = info.yang ? "yang" : "yin";
+    const changing = isChanging(value);
+
+    iconEl.innerHTML = (info.yang ? "━━━━" : "━━&nbsp;&nbsp;━━") + (info.mark ? ` <b class="yao-mark">${info.mark}</b>` : "");
+    iconEl.className = "forming-icon " + colorCls;
+
+    stateEl.innerHTML = info.name + (changing ? ' <span class="forming-badge">動</span>' : "");
+    stateEl.className = "forming-state " + colorCls + (changing ? " changing" : "");
+  }
+
   function renderHexagramText(title, hex, highlightIndices) {
     const wrap = document.createElement("div");
     wrap.className = "gua-text-block fade-in";
@@ -418,11 +532,148 @@
     if (result.hasChange) {
       resultEl.appendChild(renderHexagramText("之卦", result.transformed));
     }
+
+    resultEl.appendChild(buildAiPromptButton(result));
+  }
+
+  const CAST_METHOD_LABEL = { auto: "一鍵搖卦", manual: "逐爻投擲" };
+
+  function buildAiPromptText(result) {
+    const sixLines = result.lines
+      .map((v, i) => {
+        const info = lineSymbolLabel(v);
+        return `${YAO_LABELS[i]}爻 ${info.name}${isChanging(v) ? "(動)" : ""}`;
+      })
+      .join("／");
+
+    let text = "【起卦資訊】\n";
+    text += `占卜問題：${result.question || "（未填寫）"}\n`;
+    text += `起卦方式：${CAST_METHOD_LABEL[result.method] || CAST_METHOD_LABEL.auto}\n`;
+    text += `起卦時間：${result.time.toLocaleString("zh-TW")}\n`;
+    text += `本卦：${result.original.number}．${result.original.name}（${result.original.fullName}）\n`;
+    text += `六爻（由下而上）：${sixLines}\n`;
+    text += `動爻數：${result.changingIndices.length}爻變\n`;
+    if (result.hasChange) {
+      text += `變卦：${result.transformed.number}．${result.transformed.name}\n`;
+    }
+
+    text += "\n【卦辭與爻辭原文】\n";
+    text += `本卦卦辭：${result.original.guaci}\n`;
+    if (result.hasChange) {
+      const changingYaoText = result.changingIndices
+        .map((idx) => `${result.original.yao[idx].label}：${result.original.yao[idx].text}`)
+        .join("\n");
+      text += `各動爻之爻辭：\n${changingYaoText}\n`;
+    }
+    if (result.changingIndices.length >= 3) {
+      text += `變卦卦辭：${result.transformed.guaci}\n`;
+    }
+
+    text += "\n【斷卦依據規則，請嚴格依此判斷要引用哪一段原文】\n";
+    text += "- 0爻變（不動）：以本卦卦辭為斷\n";
+    text += "- 1爻變：以該動爻之爻辭為斷\n";
+    text += "- 2爻變：以兩個動爻中「上面那一爻」之爻辭為斷，另一爻為輔助參考\n";
+    text += "- 3爻變：以本卦卦辭為主、變卦卦辭為輔（本卦代表現況，變卦代表發展方向）\n";
+    text += "- 4爻變：以變卦中「兩個不動爻裡位置較低那一爻」之爻辭為斷\n";
+    text += "- 5爻變：以變卦中唯一不動的那一爻之爻辭為斷\n";
+    text += "- 6爻變：以變卦卦辭為斷（乾卦六爻皆變用用九、坤卦六爻皆變用用六）\n";
+
+    text += "\n【回答格式，請依序輸出】\n";
+    text += "1. 結論：先根據卦辭/爻辭與占卜問題做推論，再直接給出推論後的結論（不要預設一定要講吉凶或成敗，結論的方向由推論結果自然決定）\n";
+    text += "2. 依據：說明你引用的是上面規則裡的哪一條、對應卦名與爻位，附上原文\n";
+    text += "3. 解讀：用白話說明這段原文跟使用者問題的關聯\n";
+    text += "4. 建議：給出具體可行的建議或提醒\n";
+    text += "5. 若問題資訊不足、或卦象本身有矛盾之處，請在最後註明，不要硬掰\n";
+
+    text += "\n【限制】\n";
+    text += "僅根據《周易》卦辭、爻辭、象傳原文作依據，不要編造典籍沒有的內容；不要使用危言聳聽、恐嚇式的語氣。";
+
+    return text;
+  }
+
+  function buildAiPromptButton(result) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tool-btn tool-btn-secondary ai-prompt-btn";
+    btn.textContent = "AI解卦提示詞";
+    btn.addEventListener("click", () => openAiPromptSheet(buildAiPromptText(result)));
+    return btn;
+  }
+
+  function openAiPromptSheet(promptText) {
+    const content = document.createElement("div");
+    content.className = "sheet-content ai-prompt-sheet";
+
+    const title = document.createElement("h3");
+    title.className = "sheet-title";
+    title.textContent = "AI解卦提示詞";
+    content.appendChild(title);
+
+    const preview = document.createElement("textarea");
+    preview.className = "ai-prompt-preview";
+    preview.readOnly = true;
+    preview.value = promptText;
+    content.appendChild(preview);
+
+    const actions = document.createElement("div");
+    actions.className = "ai-prompt-actions";
+    content.appendChild(actions);
+
+    function addActionButton(label, secondary, onClick) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tool-btn" + (secondary ? " tool-btn-secondary" : "");
+      btn.textContent = label;
+      btn.addEventListener("click", onClick);
+      actions.appendChild(btn);
+      return btn;
+    }
+
+    addActionButton("複製", false, async () => {
+      try {
+        await navigator.clipboard.writeText(preview.value);
+        showToast("已複製，請前往 ChatGPT／DeepSeek 等工具貼上提問");
+      } catch (e) {
+        showToast("複製失敗，請手動選取文字");
+      }
+    });
+
+    addActionButton("分享", true, async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({ text: preview.value });
+        } catch (e) {
+          // 使用者自己取消分享，不用額外提示
+        }
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(preview.value);
+        showToast("此瀏覽器不支援分享，已改為複製");
+      } catch (e) {
+        showToast("此瀏覽器不支援分享");
+      }
+    });
+
+    addActionButton("儲存為文字", true, () => {
+      const blob = new Blob([preview.value], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "AI解卦提示詞.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    openSheet(content);
   }
 
   async function castAndAnimate(question) {
     btnCast.disabled = true;
     if (btnQuickCast) btnQuickCast.disabled = true;
+    if (manualSectionEl) manualSectionEl.classList.add("hidden");
 
     const result = castHexagram(question);
 
@@ -533,8 +784,236 @@
     if (btnQuickCast) btnQuickCast.disabled = false;
   }
 
+  // 逐爻投擲走完之後按「查看詳情」：這時候6爻都已經知道了，直接整頁顯示、不用再動畫一次
+  function showInstantResult(result) {
+    resultEl.innerHTML = "";
+    resultEl.classList.remove("hidden");
+
+    const summary = document.createElement("div");
+    summary.className = "iching-summary";
+
+    const qP = document.createElement("p");
+    qP.className = "iching-question";
+    qP.textContent = "問題：" + (result.question || "（未填寫）");
+    summary.appendChild(qP);
+
+    const tP = document.createElement("p");
+    tP.className = "iching-time";
+    tP.textContent = "時間：" + result.time.toLocaleString("zh-TW");
+    summary.appendChild(tP);
+
+    const titleEl = document.createElement("h2");
+    titleEl.className = "iching-title pop-in";
+    if (result.hasChange) {
+      const changingLabels = result.changingIndices.map((idx) => result.original.yao[idx].label).join("、");
+      titleEl.textContent = `本卦：${result.original.number}．${result.original.name}（${changingLabels}）`;
+    } else {
+      titleEl.textContent = `本卦：${result.original.number}．${result.original.name}`;
+    }
+    summary.appendChild(titleEl);
+
+    const stageEl = document.createElement("div");
+    stageEl.className = "iching-stage";
+    if (!result.hasChange) {
+      const note = document.createElement("p");
+      note.className = "iching-no-change";
+      note.textContent = "六爻不變";
+      stageEl.appendChild(note);
+    } else {
+      const transformedTitle = document.createElement("h2");
+      transformedTitle.className = "iching-title transformed";
+      transformedTitle.textContent = `之卦：${result.transformed.number}．${result.transformed.name}`;
+      stageEl.appendChild(transformedTitle);
+    }
+    summary.appendChild(stageEl);
+
+    resultEl.appendChild(summary);
+
+    const table = document.createElement("div");
+    table.className = "yao-table";
+    const header = document.createElement("div");
+    header.className = "yao-row yao-row-header";
+    const headerLabel = document.createElement("span");
+    headerLabel.className = "yao-label";
+    header.appendChild(headerLabel);
+    const headerOriginal = document.createElement("span");
+    headerOriginal.className = "yao-line";
+    headerOriginal.textContent = `本卦 ${result.original.number}．${result.original.name}`;
+    header.appendChild(headerOriginal);
+    const headerArrow = document.createElement("span");
+    headerArrow.className = "yao-arrow";
+    header.appendChild(headerArrow);
+    const headerTransformed = document.createElement("span");
+    headerTransformed.className = "yao-line";
+    headerTransformed.textContent = result.hasChange ? `之卦 ${result.transformed.number}．${result.transformed.name}` : "之卦";
+    header.appendChild(headerTransformed);
+    table.appendChild(header);
+
+    for (let i = 5; i >= 0; i--) {
+      const row = createEmptyRow(YAO_LABELS[i] + "爻");
+      fillOriginalCell(row, result.lines[i]);
+      if (result.hasChange) {
+        fillTransformedCell(row, result.lines[i], result.transformed.binary[i] === "1");
+      }
+      table.appendChild(row);
+    }
+    resultEl.appendChild(table);
+
+    renderJudgmentAndTexts(result);
+  }
+
+  // ---- 逐爻投擲：一次一爻，按一下「第N次投擲」才擲那一爻 ----
+  function startManualCasting(question) {
+    resultEl.classList.add("hidden");
+    manualSectionEl.innerHTML = "";
+    manualSectionEl.classList.remove("hidden");
+
+    const forcedCount = detectTestChangingCount(question || "");
+    const planner = forcedCount === null ? null : createChangingPlanner(forcedCount);
+    const tosses = [];
+
+    const qP = document.createElement("p");
+    qP.className = "iching-question";
+    qP.textContent = "問題：" + (question || "（未填寫）");
+    manualSectionEl.appendChild(qP);
+
+    const tray = buildCoinTray();
+    manualSectionEl.appendChild(tray.el);
+
+    const tossBtn = document.createElement("button");
+    tossBtn.type = "button";
+    tossBtn.className = "tool-btn";
+    tossBtn.textContent = "第1次投擲";
+    manualSectionEl.appendChild(tossBtn);
+
+    const formingWrap = document.createElement("div");
+    formingWrap.className = "forming-list";
+
+    const formingTitle = document.createElement("p");
+    formingTitle.className = "forming-title";
+    formingTitle.textContent = "卦象正在形成…";
+    formingWrap.appendChild(formingTitle);
+
+    const formingRows = [];
+    for (let i = 5; i >= 0; i--) {
+      const row = createFormingRow(YAO_LABELS[i] + "爻", null);
+      formingRows[i] = row;
+      formingWrap.appendChild(row);
+    }
+    manualSectionEl.appendChild(formingWrap);
+
+    tossBtn.addEventListener("click", async () => {
+      tossBtn.disabled = true; // 投擲動畫播放中不能按，播完才又能按（或結束流程）
+
+      const toss = tossLineForManual(planner);
+      tosses.push(toss);
+      const idx = tosses.length - 1;
+
+      await tray.flip(toss);
+      updateFormingRow(formingRows[idx], toss.value);
+
+      if (tosses.length < 6) {
+        tossBtn.textContent = `第${tosses.length + 1}次投擲`;
+        tossBtn.disabled = false;
+      } else {
+        tray.el.classList.add("fading");
+        await delay(300);
+        tray.el.remove();
+        tossBtn.remove();
+        showManualResultCard(question, tosses);
+      }
+    });
+  }
+
+  function showManualResultCard(question, tosses) {
+    const result = buildResult(question, tosses, "manual");
+
+    const card = document.createElement("div");
+    card.className = "manual-result-card fade-in";
+
+    const h = document.createElement("h3");
+    h.className = "iching-title";
+    h.textContent = `您的卦象：${result.original.number}．${result.original.name}`;
+    card.appendChild(h);
+
+    const list = document.createElement("div");
+    list.className = "forming-list";
+    for (let i = 5; i >= 0; i--) {
+      list.appendChild(createFormingRow(YAO_LABELS[i] + "爻", result.lines[i]));
+    }
+    card.appendChild(list);
+
+    const coinsRow = document.createElement("div");
+    coinsRow.className = "coins-row manual-result-coins";
+    const style = COIN_STYLES[currentCoinStyle] || COIN_STYLES.earth;
+    tosses[tosses.length - 1].faces.forEach((yang) => {
+      const img = document.createElement("img");
+      img.className = "coin-thumb";
+      img.src = yang ? style.front : style.back;
+      img.alt = yang ? "陽面" : "陰面";
+      coinsRow.appendChild(img);
+    });
+    card.appendChild(coinsRow);
+
+    const viewBtn = document.createElement("button");
+    viewBtn.type = "button";
+    viewBtn.className = "tool-btn";
+    viewBtn.textContent = "查看詳情";
+    viewBtn.addEventListener("click", () => {
+      manualSectionEl.classList.add("hidden");
+      showInstantResult(result);
+    });
+    card.appendChild(viewBtn);
+
+    manualSectionEl.appendChild(card);
+  }
+
+  // ---- 起卦方式選擇（開始起卦按下去先跳這個，快速取卦不用） ----
+  function openCastMethodSheet(question) {
+    const content = document.createElement("div");
+    content.className = "sheet-content cast-method-sheet";
+
+    const title = document.createElement("h3");
+    title.className = "sheet-title";
+    title.textContent = "選擇起卦方式";
+    content.appendChild(title);
+
+    function addMethodOption(icon, name, desc, onClick) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cast-method-option";
+      btn.innerHTML = `
+        <span class="cast-method-icon">${icon}</span>
+        <span class="cast-method-text">
+          <span class="cast-method-name">${name}</span>
+          <span class="cast-method-desc">${desc}</span>
+        </span>
+      `;
+      btn.addEventListener("click", onClick);
+      content.appendChild(btn);
+    }
+
+    addMethodOption("⚡", "一鍵搖卦", "快速生成卦象", () => {
+      sheet.close();
+      castAndAnimate(question);
+    });
+    addMethodOption("🤚", "逐爻投擲", "傳統方式，更有儀式感", () => {
+      sheet.close();
+      startManualCasting(question);
+    });
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "sheet-cancel";
+    cancelBtn.textContent = "取消";
+    cancelBtn.addEventListener("click", () => sheet.close());
+    content.appendChild(cancelBtn);
+
+    const sheet = openSheet(content);
+  }
+
   btnCast.addEventListener("click", () => {
-    castAndAnimate(questionInput.value.trim());
+    openCastMethodSheet(questionInput.value.trim());
   });
 
   if (btnQuickCast) {
