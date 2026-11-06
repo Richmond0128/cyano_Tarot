@@ -130,6 +130,7 @@ function initFullMode() {
 
   deckStackEl.addEventListener("pointerdown", (e) => {
     if (!manualShuffleOn) return;
+    e.preventDefault(); // 擋掉瀏覽器原生的圖片拖曳手勢，改用我們自己的散牌邏輯
     dragging = true;
     lastX = e.clientX;
     lastY = e.clientY;
@@ -201,12 +202,20 @@ function initFullMode() {
     cutAreaEl.innerHTML = "";
     const cards = remainingCards();
     const n = cards.length;
+    const mid = (n - 1) / 2;
+    const containerWidth = cutAreaEl.clientWidth || window.innerWidth;
+    const cardWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--card-w")) || 90;
+    // 跟開扇一樣：間距依容器寬度縮放，讓整排牌剛好塞進畫面，不需要橫向捲軸
+    const spacing = Math.max(2, Math.min(14, (containerWidth - cardWidth) / Math.max(1, n - 1)));
+
     cards.forEach((card, i) => {
       const el = document.createElement("div");
       el.className = "cut-card";
+      el.style.setProperty("--cut-x", `${(i - mid) * spacing}px`);
       el.style.zIndex = String(i);
       const img = document.createElement("img");
       img.alt = "塔羅牌背";
+      makeImageNonDraggable(img);
       loadImageWithRetry(img, CARD_BACK_IMAGE);
       el.appendChild(img);
       el.addEventListener("click", () => performCut(i));
