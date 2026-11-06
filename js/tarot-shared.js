@@ -44,10 +44,12 @@ function renderFanLayout(containerEl, cards) {
   if (n === 0) return [];
 
   const mid = (n - 1) / 2;
-  const angleStep = Math.min(2.5, 160 / n);
+  const angleStep = Math.min(2.5, 160 / n); // 保留弧度，不動旋轉角度
   const containerWidth = containerEl.clientWidth || window.innerWidth;
-  const maxSpacing = containerWidth < 500 ? 8 : 14;
-  const spacing = Math.min(maxSpacing, (containerWidth * 0.92) / n);
+  const cardWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--card-w")) || 90;
+  const maxSpacing = containerWidth < 500 ? 6 : 11;
+  // 扇形總寬度（卡片寬度 + 牌與牌的間距總和）要留在容器內，才不會讓頁面出現橫向捲軸
+  const spacing = Math.min(maxSpacing, Math.max(2, ((containerWidth - cardWidth) * 0.92) / n));
 
   const entries = [];
 
