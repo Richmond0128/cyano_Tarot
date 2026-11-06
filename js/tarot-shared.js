@@ -60,7 +60,8 @@ function renderFanLayout(containerEl, cards) {
     const el = document.createElement("div");
     el.className = "fan-card";
     el.style.transform = `translateX(${x}px) translateY(${y}px) rotate(${angle}deg)`;
-    el.style.zIndex = String(1000 - Math.abs(Math.round(offset)));
+    // 開扇是從左到右把牌推出來，所以越右邊的牌疊得越上面（最後推出的那張在最上層）
+    el.style.zIndex = String(i + 1);
 
     const inner = document.createElement("div");
     inner.className = "fan-card-inner";
