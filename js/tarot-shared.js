@@ -22,6 +22,13 @@ function loadImageWithRetry(img, src) {
   img.src = src;
 }
 
+// 瀏覽器預設會讓使用者把 <img> 整張拖走（拖曳時出現一張圖片殘影跟著游標），
+// 手搓洗牌需要自己接管拖曳手勢，所以每張卡片圖都要關掉這個原生行為
+function makeImageNonDraggable(img) {
+  img.draggable = false;
+  img.addEventListener("dragstart", (e) => e.preventDefault());
+}
+
 function createBackStackLayers(containerEl, layers) {
   containerEl.innerHTML = "";
   for (let i = 0; i < layers; i++) {
@@ -31,14 +38,17 @@ function createBackStackLayers(containerEl, layers) {
     div.style.zIndex = String(layers - i);
     const img = document.createElement("img");
     img.alt = "塔羅牌背";
+    makeImageNonDraggable(img);
     loadImageWithRetry(img, CARD_BACK_IMAGE);
     div.appendChild(img);
     containerEl.appendChild(div);
   }
 }
 
-// 在 containerEl 裡把 cards 排成扇形（背面朝上），回傳 { el, card, frontImg } 的陣列
-function renderFanLayout(containerEl, cards) {
+// 在 containerEl 裡把 cards 排成扇形（背面朝上），回傳 { el, card, frontImg } 的陣列。
+// animate 為 true 時，牌會從收合狀態依序（由左到右錯開一點點時間）展開成扇形，
+// 模擬像摺扇一樣慢慢推開的效果；resize 之類的重新排版則不需要再演一次展開動畫。
+function renderFanLayout(containerEl, cards, animate) {
   containerEl.innerHTML = "";
   const n = cards.length;
   if (n === 0) return [];
@@ -58,12 +68,25 @@ function renderFanLayout(containerEl, cards) {
     const angle = offset * angleStep;
     const x = offset * spacing;
     const y = Math.pow(offset / (mid || 1), 2) * 18;
+    const finalTransform = `translateX(${x}px) translateY(${y}px) rotate(${angle}deg)`;
 
     const el = document.createElement("div");
     el.className = "fan-card";
-    el.style.transform = `translateX(${x}px) translateY(${y}px) rotate(${angle}deg)`;
     // 開扇是從左到右把牌推出來，所以越右邊的牌疊得越上面（最後推出的那張在最上層）
     el.style.zIndex = String(i + 1);
+
+    if (animate) {
+      el.style.transform = "translateX(0px) translateY(0px) rotate(0deg)";
+      el.style.transition = "transform 0.32s cubic-bezier(.2,.7,.3,1)";
+      el.style.transitionDelay = `${Math.min(i, 60) * 4}ms`;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.style.transform = finalTransform;
+        });
+      });
+    } else {
+      el.style.transform = finalTransform;
+    }
 
     const inner = document.createElement("div");
     inner.className = "fan-card-inner";
@@ -72,6 +95,7 @@ function renderFanLayout(containerEl, cards) {
     back.className = "fan-card-face back";
     const backImg = document.createElement("img");
     backImg.alt = "塔羅牌背";
+    makeImageNonDraggable(backImg);
     loadImageWithRetry(backImg, CARD_BACK_IMAGE);
     back.appendChild(backImg);
 
@@ -81,6 +105,7 @@ function renderFanLayout(containerEl, cards) {
     front.className = "fan-card-face front";
     const frontImg = document.createElement("img");
     frontImg.alt = card.nameZh;
+    makeImageNonDraggable(frontImg);
     front.appendChild(frontImg);
 
     inner.appendChild(back);
@@ -102,6 +127,7 @@ function createDrawnTile(card, isReversed) {
   const img = document.createElement("img");
   img.alt = card.nameZh;
   img.className = "drawn-card-img";
+  makeImageNonDraggable(img);
   loadImageWithRetry(img, card.image);
 
   const label = document.createElement("div");
