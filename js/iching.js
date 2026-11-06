@@ -34,6 +34,56 @@
     return tosses;
   }
 
+  // 開發測試用：問題欄位打「N變爻」或「不變」時，強制擲出剛好N個動爻（哪幾爻動、陰陽仍隨機）
+  const TEST_CHANGING_COUNT_PATTERNS = [
+    { pattern: /不變/, count: 0 },
+    { pattern: /一變爻/, count: 1 },
+    { pattern: /二變爻/, count: 2 },
+    { pattern: /三變爻/, count: 3 },
+    { pattern: /四變爻/, count: 4 },
+    { pattern: /五變爻/, count: 5 },
+    { pattern: /六變爻/, count: 6 },
+  ];
+
+  function detectTestChangingCount(question) {
+    for (const { pattern, count } of TEST_CHANGING_COUNT_PATTERNS) {
+      if (pattern.test(question)) return count;
+    }
+    return null;
+  }
+
+  // 從 0..size-1 隨機挑出 count 個索引
+  function pickRandomIndices(size, count) {
+    const positions = Array.from({ length: size }, (_, i) => i);
+    for (let i = positions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    return new Set(positions.slice(0, count));
+  }
+
+  // 給定總分(6/7/8/9)，隨機配出一組3枚銅錢的正反面組合，讓擲幣動畫仍然看得出3枚錢的樣子
+  function facesForValue(value) {
+    if (value === 9) return [true, true, true];
+    if (value === 6) return [false, false, false];
+    const yangCount = value === 8 ? 2 : 1;
+    const faces = [false, false, false];
+    pickRandomIndices(3, yangCount).forEach((i) => {
+      faces[i] = true;
+    });
+    return faces;
+  }
+
+  function castLinesWithChangingCount(count) {
+    const changingSet = pickRandomIndices(6, count);
+    const tosses = [];
+    for (let i = 0; i < 6; i++) {
+      const value = changingSet.has(i) ? (Math.random() < 0.5 ? 6 : 9) : Math.random() < 0.5 ? 7 : 8;
+      tosses.push({ value, faces: facesForValue(value) });
+    }
+    return tosses;
+  }
+
   function binaryOf(lines, transform) {
     return lines
       .map((v) => {
@@ -99,7 +149,8 @@
   }
 
   function castHexagram(question) {
-    const tosses = castLines();
+    const forcedCount = detectTestChangingCount(question || "");
+    const tosses = forcedCount === null ? castLines() : castLinesWithChangingCount(forcedCount);
     const lines = tosses.map((t) => t.value);
     const changingIndices = [];
     lines.forEach((v, i) => {
@@ -159,6 +210,7 @@
   const questionInput = document.getElementById("iching-question");
   const resultEl = document.getElementById("iching-result");
   const btnCast = document.getElementById("btn-iching-cast");
+  const btnQuickCast = document.getElementById("btn-iching-quick-cast");
   const coinStyleToggle = document.getElementById("coin-style-toggle");
   const coinStyleToggleIcon = document.getElementById("coin-style-toggle-icon");
   const coinStyleToggleLabel = document.getElementById("coin-style-toggle-label");
@@ -370,6 +422,7 @@
 
   async function castAndAnimate(question) {
     btnCast.disabled = true;
+    if (btnQuickCast) btnQuickCast.disabled = true;
 
     const result = castHexagram(question);
 
@@ -407,7 +460,20 @@
     table.className = "yao-table";
     const header = document.createElement("div");
     header.className = "yao-row yao-row-header";
-    header.innerHTML = '<span class="yao-label"></span><span class="yao-line">本卦</span><span class="yao-arrow"></span><span class="yao-line">之卦</span>';
+    const headerLabel = document.createElement("span");
+    headerLabel.className = "yao-label";
+    header.appendChild(headerLabel);
+    const headerOriginal = document.createElement("span");
+    headerOriginal.className = "yao-line";
+    headerOriginal.textContent = "本卦";
+    header.appendChild(headerOriginal);
+    const headerArrow = document.createElement("span");
+    headerArrow.className = "yao-arrow";
+    header.appendChild(headerArrow);
+    const headerTransformed = document.createElement("span");
+    headerTransformed.className = "yao-line";
+    headerTransformed.textContent = "之卦";
+    header.appendChild(headerTransformed);
     table.appendChild(header);
 
     const rows = [];
@@ -431,14 +497,19 @@
 
     titleEl.classList.remove("pending");
     titleEl.classList.add("pop-in");
-    titleEl.textContent = `本卦：${result.original.number}．${result.original.name}`;
+    headerOriginal.textContent = `本卦 ${result.original.number}．${result.original.name}`;
 
     if (!result.hasChange) {
+      titleEl.textContent = `本卦：${result.original.number}．${result.original.name}`;
       const note = document.createElement("p");
       note.className = "iching-no-change fade-in";
       note.textContent = "六爻不變";
       stageEl.appendChild(note);
     } else {
+      // 動爻位置用傳統爻位名稱標示，例如「九二」「六三」
+      const changingLabels = result.changingIndices.map((idx) => result.original.yao[idx].label).join("、");
+      titleEl.textContent = `本卦：${result.original.number}．${result.original.name}（${changingLabels}）`;
+
       await delay(550);
 
       // 第二階段：本卦整卦出來後，才跳之卦——把每一爻的之卦欄位補上
@@ -446,6 +517,8 @@
         fillTransformedCell(rows[i], result.lines[i], result.transformed.binary[i] === "1");
         await delay(120);
       }
+
+      headerTransformed.textContent = `之卦 ${result.transformed.number}．${result.transformed.name}`;
 
       await delay(250);
       const transformedTitle = document.createElement("h2");
@@ -457,9 +530,16 @@
     renderJudgmentAndTexts(result);
 
     btnCast.disabled = false;
+    if (btnQuickCast) btnQuickCast.disabled = false;
   }
 
   btnCast.addEventListener("click", () => {
     castAndAnimate(questionInput.value.trim());
   });
+
+  if (btnQuickCast) {
+    btnQuickCast.addEventListener("click", () => {
+      castAndAnimate(""); // 快速取卦：不管問題欄位寫什麼，就是不用填問題也能起卦
+    });
+  }
 })();
