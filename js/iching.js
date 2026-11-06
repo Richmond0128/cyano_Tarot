@@ -130,10 +130,12 @@
       };
     }
     if (count === 2) {
-      const idx = Math.max(...changingIndices);
+      const upperIdx = Math.max(...changingIndices);
+      const lowerIdx = Math.min(...changingIndices);
       return {
-        rule: "二爻變：以本卦兩動爻中較上一爻的爻辭為斷",
-        primary: { source: `本卦 ${originalHex.yao[idx].label}`, text: originalHex.yao[idx].text },
+        rule: "二爻變：以本卦兩動爻中較上一爻的爻辭為斷，下爻為輔助參考",
+        primary: { source: `本卦 ${originalHex.yao[upperIdx].label}（主）`, text: originalHex.yao[upperIdx].text },
+        secondary: { source: `本卦 ${originalHex.yao[lowerIdx].label}（輔）`, text: originalHex.yao[lowerIdx].text },
       };
     }
     if (count === 3) {
@@ -144,10 +146,12 @@
       };
     }
     if (count === 4) {
-      const idx = Math.min(...unchanged);
+      const lowerIdx = Math.min(...unchanged);
+      const upperIdx = Math.max(...unchanged);
       return {
-        rule: "四爻變：以之卦兩個不變爻中較下一爻的爻辭為斷",
-        primary: { source: `之卦 ${transformedHex.yao[idx].label}`, text: transformedHex.yao[idx].text },
+        rule: "四爻變：以之卦兩個不變爻中較下一爻的爻辭為斷，上爻為輔助參考",
+        primary: { source: `之卦 ${transformedHex.yao[lowerIdx].label}（主）`, text: transformedHex.yao[lowerIdx].text },
+        secondary: { source: `之卦 ${transformedHex.yao[upperIdx].label}（輔）`, text: transformedHex.yao[upperIdx].text },
       };
     }
     if (count === 5) {
