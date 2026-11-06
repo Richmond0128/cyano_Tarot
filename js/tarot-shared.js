@@ -37,8 +37,10 @@ function createBackStackLayers(containerEl, layers) {
   }
 }
 
-// 在 containerEl 裡把 cards 排成扇形（背面朝上），回傳 { el, card, frontImg } 的陣列
-function renderFanLayout(containerEl, cards) {
+// 在 containerEl 裡把 cards 排成扇形（背面朝上），回傳 { el, card, frontImg } 的陣列。
+// animate 為 true 時，牌會從收合狀態依序（由左到右錯開一點點時間）展開成扇形，
+// 模擬像摺扇一樣慢慢推開的效果；resize 之類的重新排版則不需要再演一次展開動畫。
+function renderFanLayout(containerEl, cards, animate) {
   containerEl.innerHTML = "";
   const n = cards.length;
   if (n === 0) return [];
@@ -58,12 +60,25 @@ function renderFanLayout(containerEl, cards) {
     const angle = offset * angleStep;
     const x = offset * spacing;
     const y = Math.pow(offset / (mid || 1), 2) * 18;
+    const finalTransform = `translateX(${x}px) translateY(${y}px) rotate(${angle}deg)`;
 
     const el = document.createElement("div");
     el.className = "fan-card";
-    el.style.transform = `translateX(${x}px) translateY(${y}px) rotate(${angle}deg)`;
     // 開扇是從左到右把牌推出來，所以越右邊的牌疊得越上面（最後推出的那張在最上層）
     el.style.zIndex = String(i + 1);
+
+    if (animate) {
+      el.style.transform = "translateX(0px) translateY(0px) rotate(0deg)";
+      el.style.transition = "transform 0.45s cubic-bezier(.2,.7,.3,1)";
+      el.style.transitionDelay = `${Math.min(i, 60) * 6}ms`;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.style.transform = finalTransform;
+        });
+      });
+    } else {
+      el.style.transform = finalTransform;
+    }
 
     const inner = document.createElement("div");
     inner.className = "fan-card-inner";
