@@ -523,6 +523,47 @@ body {
   margin: 0;
 }
 
+/* 天錢/地錢手動切換：低調放右側，預設已自動選好，不是必選步驟 */
+.coin-style-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 50;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.coin-style-toggle:hover {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+.coin-style-toggle-icon {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.coin-style-toggle-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
 .iching-textarea {
   width: 100%;
   min-height: 90px;
@@ -613,21 +654,14 @@ body {
 .coin-face {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: cover;
   backface-visibility: hidden;
-  font-size: 0.95rem;
-  letter-spacing: 0.05em;
-  border: 2px solid var(--gold);
+  box-shadow: 0 0 0 1px rgba(184, 146, 63, 0.4);
 }
-.coin-face.front { background: #f4e3b2; color: var(--ink); }
-.coin-face.back {
-  background: var(--ink);
-  color: #f4e3b2;
-  transform: rotateY(180deg);
-}
+.coin-face.back { transform: rotateY(180deg); }
 
 .toss-label {
   margin: 0;

@@ -131,6 +131,27 @@
 
   window.IChing = { castHexagram, lineSymbolLabel, YAO_LABELS };
 
+  // 天錢／地錢銅錢圖（見 assets/iching/coins/README.md）：
+  // 兩款正面都是八卦面＝陽，背面不同＝陰。地錢(暗)白天用，天錢(亮)晚上用。
+  const COIN_STYLES = {
+    earth: {
+      label: "地錢",
+      front: "assets/iching/coins/地錢-正面-八卦-圓形去背.png",
+      back: "assets/iching/coins/地錢-背面-十二生肖-圓形去背.png",
+    },
+    heaven: {
+      label: "天錢",
+      front: "assets/iching/coins/天錢-正面-八卦-圓形去背.png",
+      back: "assets/iching/coins/天錢-背面-天師符-圓形去背.png",
+    },
+  };
+  const OTHER_COIN_STYLE = { earth: "heaven", heaven: "earth" };
+
+  function autoCoinStyle() {
+    const hour = new Date().getHours();
+    return hour >= 18 || hour < 6 ? "heaven" : "earth"; // 晚上用天錢，白天用地錢
+  }
+
   // ---- DOM ----
   const formEl = document.getElementById("iching-form");
   if (!formEl) return; // 這個頁面沒有易經區塊時直接略過
@@ -138,6 +159,25 @@
   const questionInput = document.getElementById("iching-question");
   const resultEl = document.getElementById("iching-result");
   const btnCast = document.getElementById("btn-iching-cast");
+  const coinStyleToggle = document.getElementById("coin-style-toggle");
+  const coinStyleToggleIcon = document.getElementById("coin-style-toggle-icon");
+  const coinStyleToggleLabel = document.getElementById("coin-style-toggle-label");
+
+  // 預設自動依時間選好天錢/地錢，這顆按鈕只是低調的「想換也可以換」次要選項
+  let currentCoinStyle = autoCoinStyle();
+
+  if (coinStyleToggle) {
+    function updateCoinStyleToggleUI() {
+      const other = COIN_STYLES[OTHER_COIN_STYLE[currentCoinStyle]];
+      coinStyleToggleIcon.src = COIN_STYLES[currentCoinStyle].front;
+      coinStyleToggleLabel.textContent = `可切換至${other.label}`;
+    }
+    coinStyleToggle.addEventListener("click", () => {
+      currentCoinStyle = OTHER_COIN_STYLE[currentCoinStyle];
+      updateCoinStyleToggleUI();
+    });
+    updateCoinStyleToggleUI();
+  }
 
   function delay(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -197,11 +237,15 @@
     coinsRow.className = "coins-row";
     el.appendChild(coinsRow);
 
+    const style = COIN_STYLES[currentCoinStyle] || COIN_STYLES.earth;
     const coins = [];
     for (let i = 0; i < 3; i++) {
       const coin = document.createElement("div");
       coin.className = "coin";
-      coin.innerHTML = '<div class="coin-face front">字</div><div class="coin-face back">幕</div>';
+      coin.innerHTML = `
+        <img class="coin-face front" src="${style.front}" alt="陽面（八卦）">
+        <img class="coin-face back" src="${style.back}" alt="陰面">
+      `;
       coins.push(coin);
       coinsRow.appendChild(coin);
     }
