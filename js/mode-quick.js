@@ -19,6 +19,7 @@ function initQuickMode() {
 
   const drawnAreaEl = document.getElementById("quick-drawn-area");
   const drawnCardsEl = document.getElementById("quick-drawn-cards");
+  const actionsAreaEl = document.getElementById("quick-actions-area");
   const morePromptEl = document.getElementById("quick-more-prompt");
   const btnMore = document.getElementById("btn-quick-more");
   const btnFinish = document.getElementById("btn-quick-finish");
@@ -54,6 +55,7 @@ function initQuickMode() {
     setupEl.classList.add("hidden");
     tableEl.classList.remove("hidden");
     drawnAreaEl.classList.remove("hidden");
+    actionsAreaEl.classList.remove("hidden");
     morePromptEl.classList.add("hidden");
 
     updateProgress();
@@ -114,6 +116,7 @@ function initQuickMode() {
     setupEl.classList.remove("hidden");
     tableEl.classList.add("hidden");
     drawnAreaEl.classList.add("hidden");
+    actionsAreaEl.classList.add("hidden");
     fanAreaEl.classList.remove("hidden");
     fanAreaEl.innerHTML = "";
     drawnCardsEl.innerHTML = "";

@@ -9,6 +9,16 @@
 
 * { box-sizing: border-box; }
 
+/* 牌桌上的圖都是互動用的，不要讓瀏覽器原生的「拖圖片」或選字跳出來搗亂 */
+.deck-stack img,
+.fan-card img,
+.cut-card img,
+.drawn-card img {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -263,36 +273,33 @@ body {
 
 /* 切牌：整副牌攤成一排可點選的牌背，點哪裡就從哪裡切開 */
 .cut-area {
+  position: relative;
   width: 100%;
-  max-width: 900px;
   min-height: 180px;
   margin: 24px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: nowrap;
-  overflow-x: auto;
   padding: 10px 0;
 }
 
 .cut-area.hidden { display: none; }
 
 .cut-card {
-  flex: 0 0 auto;
+  --cut-x: 0px;
+  position: absolute;
+  top: 10px;
+  left: 50%;
   width: var(--card-w);
   height: var(--card-h);
-  margin-left: calc(var(--card-w) * -0.78);
+  margin-left: calc(var(--card-w) / -2);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   cursor: pointer;
+  transform: translateX(var(--cut-x)) translateY(0);
   transition: transform 0.15s ease;
 }
 
-.cut-card:first-child { margin-left: 0; }
-
 .cut-card:hover {
-  transform: translateY(-10px);
+  transform: translateX(var(--cut-x)) translateY(-10px);
 }
 
 .cut-card img { width: 100%; height: 100%; object-fit: cover; }
@@ -402,6 +409,11 @@ body {
 }
 
 .quick-table.hidden { display: none; }
+
+.quick-actions-area {
+  width: 100%;
+  text-align: center;
+}
 
 .quick-more-prompt {
   margin-top: 24px;
@@ -797,4 +809,45 @@ body {
 .yao-ci-list li.changing .yao-ci-main {
   color: var(--gold);
   font-weight: bold;
+}
+
+/* ---- AI 解牌（先只做按鈕，功能之後再接） ---- */
+
+.ai-interpret-btn {
+  position: fixed;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+  background: var(--ink);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 10px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.ai-interpret-btn:hover { background: var(--gold); }
+.ai-interpret-btn:active { transform: translateY(-50%) scale(0.96); }
+
+.ai-interpret-btn span {
+  writing-mode: vertical-rl;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .ai-interpret-btn {
+    right: 8px;
+    padding: 10px 7px;
+  }
+  .ai-interpret-btn svg { width: 17px; height: 17px; }
+  .ai-interpret-btn span { font-size: 0.68rem; }
 }

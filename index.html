@@ -45,6 +45,11 @@
       <span class="draw-count">已抽 <span id="full-draw-count-num">0</span> 張</span>
     </section>
 
+    <section class="drawn-area">
+      <h2 class="drawn-title">已抽出的牌</h2>
+      <div id="full-drawn-cards" class="drawn-cards"></div>
+    </section>
+
     <section id="full-deck-area" class="deck-area">
       <div id="full-deck-stack" class="deck-stack"></div>
       <p id="full-deck-hint" class="deck-hint">請先洗牌，再點選「開扇」選牌</p>
@@ -53,11 +58,6 @@
     <section id="full-cut-area" class="cut-area hidden"></section>
 
     <section id="full-fan-area" class="fan-area hidden"></section>
-
-    <section class="drawn-area">
-      <h2 class="drawn-title">已抽出的牌</h2>
-      <div id="full-drawn-cards" class="drawn-cards"></div>
-    </section>
 
   </main>
 
@@ -78,15 +78,17 @@
       </div>
     </section>
 
+    <section id="quick-drawn-area" class="drawn-area hidden">
+      <h2 class="drawn-title">已抽出的牌</h2>
+      <div id="quick-drawn-cards" class="drawn-cards"></div>
+    </section>
+
     <section id="quick-table" class="quick-table hidden">
       <p id="quick-progress-text" class="deck-hint"></p>
       <div id="quick-fan-area" class="fan-area"></div>
     </section>
 
-    <section id="quick-drawn-area" class="drawn-area hidden">
-      <h2 class="drawn-title">已抽出的牌</h2>
-      <div id="quick-drawn-cards" class="drawn-cards"></div>
-
+    <section id="quick-actions-area" class="quick-actions-area hidden">
       <div id="quick-more-prompt" class="quick-more-prompt hidden">
         <p>要不要再多抽一張？</p>
         <button id="btn-quick-more" class="tool-btn" type="button">再抽一張</button>
@@ -97,6 +99,11 @@
     </section>
 
   </main>
+
+  <button id="btn-ai-interpret" class="ai-interpret-btn" type="button" title="AI 解牌">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2Z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>
+    <span>AI 解牌</span>
+  </button>
 
   <script src="js/cards.js"></script>
   <script src="js/tarot-shared.js"></script>

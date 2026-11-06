@@ -22,6 +22,13 @@ function loadImageWithRetry(img, src) {
   img.src = src;
 }
 
+// 瀏覽器預設會讓使用者把 <img> 整張拖走（拖曳時出現一張圖片殘影跟著游標），
+// 手搓洗牌需要自己接管拖曳手勢，所以每張卡片圖都要關掉這個原生行為
+function makeImageNonDraggable(img) {
+  img.draggable = false;
+  img.addEventListener("dragstart", (e) => e.preventDefault());
+}
+
 function createBackStackLayers(containerEl, layers) {
   containerEl.innerHTML = "";
   for (let i = 0; i < layers; i++) {
@@ -31,6 +38,7 @@ function createBackStackLayers(containerEl, layers) {
     div.style.zIndex = String(layers - i);
     const img = document.createElement("img");
     img.alt = "塔羅牌背";
+    makeImageNonDraggable(img);
     loadImageWithRetry(img, CARD_BACK_IMAGE);
     div.appendChild(img);
     containerEl.appendChild(div);
@@ -69,8 +77,8 @@ function renderFanLayout(containerEl, cards, animate) {
 
     if (animate) {
       el.style.transform = "translateX(0px) translateY(0px) rotate(0deg)";
-      el.style.transition = "transform 0.45s cubic-bezier(.2,.7,.3,1)";
-      el.style.transitionDelay = `${Math.min(i, 60) * 6}ms`;
+      el.style.transition = "transform 0.32s cubic-bezier(.2,.7,.3,1)";
+      el.style.transitionDelay = `${Math.min(i, 60) * 4}ms`;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           el.style.transform = finalTransform;
@@ -87,6 +95,7 @@ function renderFanLayout(containerEl, cards, animate) {
     back.className = "fan-card-face back";
     const backImg = document.createElement("img");
     backImg.alt = "塔羅牌背";
+    makeImageNonDraggable(backImg);
     loadImageWithRetry(backImg, CARD_BACK_IMAGE);
     back.appendChild(backImg);
 
@@ -96,6 +105,7 @@ function renderFanLayout(containerEl, cards, animate) {
     front.className = "fan-card-face front";
     const frontImg = document.createElement("img");
     frontImg.alt = card.nameZh;
+    makeImageNonDraggable(frontImg);
     front.appendChild(frontImg);
 
     inner.appendChild(back);
@@ -117,6 +127,7 @@ function createDrawnTile(card, isReversed) {
   const img = document.createElement("img");
   img.alt = card.nameZh;
   img.className = "drawn-card-img";
+  makeImageNonDraggable(img);
   loadImageWithRetry(img, card.image);
 
   const label = document.createElement("div");
