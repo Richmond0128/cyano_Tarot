@@ -333,6 +333,50 @@ function initTarotTable() {
     renderStack();
   }
 
+  // 不用開扇、不用牌面DOM，直接從剩下的牌裡挑一張記成抽出——
+  // 給首頁「抽一張／抽三張／抽五張」跟結果頁「多抽一張」用
+  function drawOneDirect() {
+    const cards = remainingCards();
+    if (cards.length === 0) return null;
+    const card = cards[Math.floor(Math.random() * cards.length)];
+    const isReversed = reversedIds.has(card.id);
+    drawnIds.add(card.id);
+    drawnList.push({ card, reversed: isReversed });
+    drawnCardsEl.appendChild(createDrawnTile(card, isReversed));
+    drawCountEl.textContent = String(drawnIds.size);
+    return card;
+  }
+
+  // 首頁「抽一張／抽三張／抽五張」：整副牌重新洗過，一次抽 n 張出來
+  function quickDrawMany(n) {
+    order = shuffledCopy(fullDeck);
+    drawnIds.clear();
+    reversedIds.clear();
+    drawnList.length = 0;
+    drawnCardsEl.innerHTML = "";
+    drawCountEl.textContent = "0";
+    setManualShuffle(false);
+    showOnly("stack");
+    renderStack();
+
+    // 先洗個幾次，讓正逆位混一混，不會每次都全部正位
+    shuffleOnce();
+    shuffleOnce();
+    shuffleOnce();
+
+    const count = Math.min(n, remainingCards().length);
+    for (let i = 0; i < count; i++) {
+      window.setTimeout(() => drawOneDirect(), i * 180);
+    }
+  }
+
+  // 結果頁「多抽一張」：在目前已抽出的牌之外，再多抽一張，不重新洗整副牌
+  function quickDrawOneMore() {
+    if (remainingCards().length === 0) return null;
+    shuffleOnce();
+    return drawOneDirect();
+  }
+
   btnShuffle.addEventListener("click", onShuffleClick);
   btnArrange.addEventListener("click", onArrangeClick);
   btnCut.addEventListener("click", onCutClick);
@@ -352,4 +396,9 @@ function initTarotTable() {
   // 給AI解牌提示詞用：讀取目前已抽出的牌（依抽出順序）
   window.TarotState = window.TarotState || {};
   window.TarotState.getDrawn = () => drawnList.map((d) => ({ card: d.card, reversed: d.reversed }));
+
+  // 給首頁快速抽牌按鈕跟結果頁操作按鈕用
+  window.TarotTable = window.TarotTable || {};
+  window.TarotTable.quickDrawMany = quickDrawMany;
+  window.TarotTable.quickDrawOneMore = quickDrawOneMore;
 }
