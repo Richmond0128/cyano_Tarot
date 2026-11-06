@@ -57,12 +57,12 @@ function initQuickMode() {
     morePromptEl.classList.add("hidden");
 
     updateProgress();
-    renderFan();
+    renderFan(true);
   }
 
-  function renderFan() {
+  function renderFan(animate) {
     const cards = remainingCards();
-    const entries = renderFanLayout(fanAreaEl, cards);
+    const entries = renderFanLayout(fanAreaEl, cards, animate);
     entries.forEach(({ el, card, frontImg }) => {
       el.addEventListener("click", () => drawCard(card, el, frontImg));
     });

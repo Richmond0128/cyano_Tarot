@@ -94,6 +94,17 @@ body {
 }
 .tool-btn-secondary:hover { background: #e3e0d8; }
 
+.tool-btn-icon {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-btn-icon svg { display: block; }
+
 .tarot-submode-switch {
   display: flex;
   gap: 10px;
@@ -132,6 +143,12 @@ body {
   align-items: center;
   min-height: 220px;
   justify-content: center;
+  transition: min-height 0.25s ease;
+}
+
+/* 手搓洗牌時牌會散到很大的範圍，給牌桌多一點空間才不會被下面的內容擠到 */
+.deck-area.shuffle-active {
+  min-height: 480px;
 }
 
 .deck-stack {
@@ -423,6 +440,7 @@ body {
     font-size: 0.85rem;
     flex: 0 0 auto;
   }
+  .tool-btn-icon { width: 42px; height: 42px; padding: 0; }
   .draw-count {
     width: 100%;
     text-align: center;
@@ -446,6 +464,7 @@ body {
 /* larger touch targets on touch devices, no hover state to rely on */
 @media (hover: none) {
   .tool-btn { padding: 13px 20px; }
+  .tool-btn-icon { padding: 0; }
   .fan-card { touch-action: manipulation; }
 }
 

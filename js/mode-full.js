@@ -5,6 +5,7 @@ function initFullMode() {
   let order = shuffledCopy(fullDeck);
   const drawnIds = new Set();
 
+  const deckAreaEl = document.getElementById("full-deck-area");
   const deckStackEl = document.getElementById("full-deck-stack");
   const deckHintEl = document.getElementById("full-deck-hint");
   const cutAreaEl = document.getElementById("full-cut-area");
@@ -20,14 +21,20 @@ function initFullMode() {
 
   let manualShuffleOn = false;
   let dragging = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  let scatterAtDragStart = 0;
+  let lastX = 0;
+  let lastY = 0;
+  let cumulativeDist = 0; // 這次拖曳累積移動了多少距離，持續移動就持續增加，不是只看頭尾距離
+  let dragAngle = 0; // 最近一小段移動的方向，用來讓散開的牌偏向手指/滑鼠移動的方向
   let scatterAmount = 0; // 0 = 整齊一疊，1 = 散滿整張桌子
-  let scatterCards = []; // { el, angle, reach, rot, baseOffset }
+  let scatterCards = []; // { el, spread, reach, rot, baseOffset }
 
-  const SCATTER_LAYERS = 12;
-  const SCATTER_MAX_REACH = 95; // px，手搓時最多能把牌推多遠
+  const SCATTER_LAYERS = 40; // 手搓時要有夠多張牌可以散開，看起來才像整副牌被打亂
+  const SCATTER_DISTANCE_FOR_FULL = 900; // 累積拖曳這個距離，散開程度就會到頂
+
+  // 手機螢幕比較窄，散開的範圍要跟著畫面寬度縮小，不然牌會飛出螢幕外
+  function getScatterReach() {
+    return Math.min(190, window.innerWidth * 0.4);
+  }
 
   function remainingCards() {
     return order.filter((card) => !drawnIds.has(card.id));
@@ -40,13 +47,13 @@ function initFullMode() {
     fanAreaEl.classList.toggle("hidden", view !== "fan");
   }
 
-  // 每張散落牌各自隨機分配一個方向/距離/角度，手搓時才會看起來像
-  // 真的被撥散在桌上，而不是整疊牌當成一塊硬板在轉
+  // 每張散落牌各自隨機分配一個相對於「撥動方向」的偏角與距離，手搓時才會看起來像
+  // 真的被手撥散在桌上（大致往你撥的方向飛，但不是每張都精準同一個角度）
   function randomizeScatterPattern() {
     scatterCards.forEach((c) => {
-      c.angle = Math.random() * Math.PI * 2;
-      c.reach = 0.45 + Math.random() * 0.55;
-      c.rot = (Math.random() - 0.5) * 70;
+      c.spread = (Math.random() - 0.5) * Math.PI * 1.3; // 以撥動方向為中心，左右各偏最多約117度
+      c.reach = 0.5 + Math.random() * 0.5;
+      c.rot = (Math.random() - 0.5) * 80;
     });
   }
 
@@ -54,26 +61,41 @@ function initFullMode() {
     createBackStackLayers(deckStackEl, SCATTER_LAYERS);
     scatterCards = Array.from(deckStackEl.querySelectorAll(".stack-card")).map((el, i) => ({
       el,
-      angle: 0,
+      spread: 0,
       reach: 0,
       rot: 0,
-      baseOffset: i * -1.2,
+      baseOffset: i * -0.6,
+      // 休息時牌堆不是每張都完全貼齊，留一點點隨機誤差看起來更自然
+      restJitterX: (Math.random() - 0.5) * 3,
+      restJitterY: (Math.random() - 0.5) * 3,
+      restJitterRot: (Math.random() - 0.5) * 3,
     }));
     randomizeScatterPattern();
     scatterAmount = 0;
-    applyScatter(0);
+    scatterCards.forEach((c) => {
+      c.el.style.transition = "none";
+    });
+    applyScatter(0, 0);
   }
 
-  function applyScatter(amount) {
+  function restTransform(c) {
+    const x = c.baseOffset + c.restJitterX;
+    const y = c.baseOffset + c.restJitterY;
+    return `translate(${x}px, ${y}px) rotate(${c.restJitterRot}deg)`;
+  }
+
+  function applyScatter(amount, angle) {
     scatterAmount = Math.max(0, Math.min(1, amount));
+    const maxReach = getScatterReach();
     scatterCards.forEach((c) => {
       if (scatterAmount <= 0.001) {
-        c.el.style.transform = `translate(${c.baseOffset}px, ${c.baseOffset}px)`;
+        c.el.style.transform = restTransform(c);
         return;
       }
-      const dist = SCATTER_MAX_REACH * c.reach * scatterAmount;
-      const dx = Math.cos(c.angle) * dist + c.baseOffset;
-      const dy = Math.sin(c.angle) * dist + c.baseOffset;
+      const effectiveAngle = angle + c.spread;
+      const dist = maxReach * c.reach * scatterAmount;
+      const dx = Math.cos(effectiveAngle) * dist + c.baseOffset;
+      const dy = Math.sin(effectiveAngle) * dist + c.baseOffset;
       const rot = c.rot * scatterAmount;
       c.el.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
     });
@@ -82,8 +104,9 @@ function initFullMode() {
   function setManualShuffle(on) {
     manualShuffleOn = on;
     btnShuffle.classList.toggle("active", on);
+    deckAreaEl.classList.toggle("shuffle-active", on);
     deckHintEl.textContent = on
-      ? "按著牌堆拖曳，像手搓牌一樣把牌撥散打亂"
+      ? "按著牌堆滑動（手機用手指滑），牌會跟著你撥動的方向散開"
       : "洗好了，可以「整牌」收攏、「切牌」或直接「開扇」選牌";
   }
 
@@ -97,9 +120,9 @@ function initFullMode() {
     if (!manualShuffleOn) {
       showOnly("stack");
       setManualShuffle(true);
-      shuffleOnce();
-      randomizeScatterPattern();
-      applyScatter(0.25); // 先稍微鬆開一點，提示牌可以被撥動
+      scatterCards.forEach((c) => {
+        c.el.style.transition = "transform 0.3s ease";
+      });
     } else {
       setManualShuffle(false);
     }
@@ -108,38 +131,69 @@ function initFullMode() {
   deckStackEl.addEventListener("pointerdown", (e) => {
     if (!manualShuffleOn) return;
     dragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-    scatterAtDragStart = scatterAmount;
-    randomizeScatterPattern();
+    lastX = e.clientX;
+    lastY = e.clientY;
+    cumulativeDist = scatterAmount * SCATTER_DISTANCE_FOR_FULL;
+    scatterCards.forEach((c) => {
+      c.el.style.transition = "transform 0.08s linear";
+    });
     deckStackEl.setPointerCapture(e.pointerId);
   });
 
   deckStackEl.addEventListener("pointermove", (e) => {
     if (!dragging) return;
-    const dx = e.clientX - dragStartX;
-    const dy = e.clientY - dragStartY;
-    const dist = Math.hypot(dx, dy);
-    applyScatter(scatterAtDragStart + dist / 160);
+    const stepDx = e.clientX - lastX;
+    const stepDy = e.clientY - lastY;
+    const stepDist = Math.hypot(stepDx, stepDy);
+    if (stepDist < 1) return;
+
+    cumulativeDist += stepDist;
+    dragAngle = Math.atan2(stepDy, stepDx);
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    // 移動量本身會持續把牌打亂得更散，而不是只看起點到現在的直線距離，
+    // 這樣一直來回撥動也會持續洗亂，跟真的手搓牌一樣
+    if (Math.random() < 0.35) shuffleOnce();
+    applyScatter(cumulativeDist / SCATTER_DISTANCE_FOR_FULL, dragAngle);
   });
 
   function endDrag(e) {
     if (!dragging) return;
     dragging = false;
-    const dx = e.clientX - dragStartX;
-    const dy = e.clientY - dragStartY;
-    const moved = Math.hypot(dx, dy) > 12;
-    if (moved) shuffleOnce();
+    scatterCards.forEach((c) => {
+      c.el.style.transition = "transform 0.3s ease";
+    });
     // 牌就留在撥散後的樣子，不會自動收回——按「整牌」才會收攏
   }
 
   deckStackEl.addEventListener("pointerup", endDrag);
   deckStackEl.addEventListener("pointercancel", endDrag);
 
+  // 整牌分兩階段：先鬆鬆地收攏成一束（還有點參差不齊），
+  // 再對齊角落收成整齊的一疊，模擬現實中收牌、對齊牌緣的兩個動作
+  function collectCards() {
+    scatterCards.forEach((c, i) => {
+      c.el.style.transition = "transform 0.22s ease-in";
+      const wobbleX = (Math.random() - 0.5) * 18 + c.baseOffset;
+      const wobbleY = (i - scatterCards.length / 2) * 1.4 + c.baseOffset;
+      const wobbleRot = (Math.random() - 0.5) * 16;
+      c.el.style.transform = `translate(${wobbleX}px, ${wobbleY}px) rotate(${wobbleRot}deg)`;
+    });
+
+    window.setTimeout(() => {
+      scatterCards.forEach((c) => {
+        c.el.style.transition = "transform 0.32s cubic-bezier(.22,.61,.36,1)";
+        c.el.style.transform = restTransform(c);
+      });
+      scatterAmount = 0;
+    }, 220);
+  }
+
   function onArrangeClick() {
     setManualShuffle(false);
     showOnly("stack");
-    applyScatter(0);
+    collectCards();
     deckHintEl.textContent = "牌已經整理成一疊了";
   }
 
@@ -184,14 +238,14 @@ function initFullMode() {
     renderCutRow();
   }
 
-  function renderFan() {
+  function renderFan(animate) {
     const cards = remainingCards();
     if (cards.length === 0) {
       showOnly("none");
       deckHintEl.textContent = "牌已經抽完囉，點「重新開始」再洗一次牌";
       return;
     }
-    const entries = renderFanLayout(fanAreaEl, cards);
+    const entries = renderFanLayout(fanAreaEl, cards, animate);
     entries.forEach(({ el, card, frontImg }) => {
       el.addEventListener("click", () => drawCard(card, el, frontImg));
     });
@@ -201,7 +255,7 @@ function initFullMode() {
     setManualShuffle(false);
     showOnly("fan");
     deckHintEl.textContent = "點一張牌把它抽出來";
-    renderFan();
+    renderFan(true);
   }
 
   function drawCard(card, el, frontImg) {
