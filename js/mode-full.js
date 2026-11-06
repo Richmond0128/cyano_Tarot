@@ -1,11 +1,12 @@
-// 塔羅牌桌：洗牌（可用滑鼠/手指手搓打亂）、整牌、切牌、開扇選牌、快速抽一張
+// 塔羅牌桌：洗牌（可用滑鼠/手指手搓打亂）、整牌、切牌、開扇選牌
 
 function initTarotTable() {
   const fullDeck = buildDeck();
   let order = shuffledCopy(fullDeck);
   const drawnIds = new Set();
-  const reversedIds = new Set(); // 手搓洗牌時會隨機把牌翻面，記住哪些牌現在是逆位
+  const reversedIds = new Set(); // 記住哪些牌現在是逆位：開局先各自骰一次，手搓洗牌時還會再被翻面
   const drawnList = []; // 依抽出順序記錄 {card, reversed}，給AI解牌提示詞用
+  randomizeReversedState();
 
   const deckAreaEl = document.getElementById("deck-area");
   const deckStackEl = document.getElementById("deck-stack");
@@ -20,7 +21,6 @@ function initTarotTable() {
   const btnCut = document.getElementById("btn-cut");
   const btnFan = document.getElementById("btn-fan");
   const btnReset = document.getElementById("btn-reset");
-  const btnQuickDrawOne = document.getElementById("btn-quick-draw-one");
 
   let manualShuffleOn = false;
   let dragging = false;
@@ -41,6 +41,15 @@ function initTarotTable() {
 
   function remainingCards() {
     return order.filter((card) => !drawnIds.has(card.id));
+  }
+
+  // 每張牌開局先各自獨立骰一次正逆位，不能只靠手搓洗牌才會有逆位——
+  // 不然沒手搓、直接開扇抽牌的話，牌永遠都是正位
+  function randomizeReversedState() {
+    reversedIds.clear();
+    fullDeck.forEach((card) => {
+      if (Math.random() < 0.5) reversedIds.add(card.id);
+    });
   }
 
   function showOnly(view) {
@@ -304,26 +313,10 @@ function initTarotTable() {
     }, 650);
   }
 
-  // 快速抽一張：不管現在牌桌是什麼狀態，直接洗一次、開扇、隨機抽一張出來
-  function onQuickDrawOneClick() {
-    if (remainingCards().length === 0) {
-      deckHintEl.textContent = "牌已經抽完囉，點「重新開始」再洗一次牌";
-      return;
-    }
-    setManualShuffle(false);
-    shuffleOnce();
-    showOnly("fan");
-    deckHintEl.textContent = "幫你快速抽了一張";
-    const entries = renderFan(false);
-    if (entries.length === 0) return;
-    const pick = entries[Math.floor(Math.random() * entries.length)];
-    window.setTimeout(() => drawCard(pick.card, pick.el, pick.frontImg), 60);
-  }
-
   function onResetClick() {
     order = shuffledCopy(fullDeck);
     drawnIds.clear();
-    reversedIds.clear();
+    randomizeReversedState();
     drawnList.length = 0;
     drawCountEl.textContent = "0";
     drawnCardsEl.innerHTML = "";
@@ -333,12 +326,55 @@ function initTarotTable() {
     renderStack();
   }
 
+  // 不用開扇、不用牌面DOM，直接從剩下的牌裡挑一張記成抽出——
+  // 給首頁「抽一張／抽三張／抽五張」跟結果頁「多抽一張」用
+  function drawOneDirect() {
+    const cards = remainingCards();
+    if (cards.length === 0) return null;
+    const card = cards[Math.floor(Math.random() * cards.length)];
+    const isReversed = reversedIds.has(card.id);
+    drawnIds.add(card.id);
+    drawnList.push({ card, reversed: isReversed });
+    drawnCardsEl.appendChild(createDrawnTile(card, isReversed));
+    drawCountEl.textContent = String(drawnIds.size);
+    return card;
+  }
+
+  // 首頁「抽一張／抽三張／抽五張」：整副牌重新洗過，一次抽 n 張出來
+  function quickDrawMany(n) {
+    order = shuffledCopy(fullDeck);
+    drawnIds.clear();
+    reversedIds.clear();
+    drawnList.length = 0;
+    drawnCardsEl.innerHTML = "";
+    drawCountEl.textContent = "0";
+    setManualShuffle(false);
+    showOnly("stack");
+    renderStack();
+
+    // 先洗個幾次，讓正逆位混一混，不會每次都全部正位
+    shuffleOnce();
+    shuffleOnce();
+    shuffleOnce();
+
+    const count = Math.min(n, remainingCards().length);
+    for (let i = 0; i < count; i++) {
+      window.setTimeout(() => drawOneDirect(), i * 180);
+    }
+  }
+
+  // 結果頁「多抽一張」：在目前已抽出的牌之外，再多抽一張，不重新洗整副牌
+  function quickDrawOneMore() {
+    if (remainingCards().length === 0) return null;
+    shuffleOnce();
+    return drawOneDirect();
+  }
+
   btnShuffle.addEventListener("click", onShuffleClick);
   btnArrange.addEventListener("click", onArrangeClick);
   btnCut.addEventListener("click", onCutClick);
   btnFan.addEventListener("click", onFanClick);
   btnReset.addEventListener("click", onResetClick);
-  btnQuickDrawOne.addEventListener("click", onQuickDrawOneClick);
 
   let resizeTimer = null;
   window.addEventListener("resize", () => {
@@ -352,4 +388,9 @@ function initTarotTable() {
   // 給AI解牌提示詞用：讀取目前已抽出的牌（依抽出順序）
   window.TarotState = window.TarotState || {};
   window.TarotState.getDrawn = () => drawnList.map((d) => ({ card: d.card, reversed: d.reversed }));
+
+  // 給首頁快速抽牌按鈕跟結果頁操作按鈕用
+  window.TarotTable = window.TarotTable || {};
+  window.TarotTable.quickDrawMany = quickDrawMany;
+  window.TarotTable.quickDrawOneMore = quickDrawOneMore;
 }

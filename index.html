@@ -26,7 +26,13 @@
       <p class="iching-hint">輸入想問的事情，或直接跳過開始抽牌</p>
       <textarea id="tarot-question" class="iching-textarea" placeholder="想問的事情…" maxlength="80"></textarea>
       <button id="btn-tarot-start" class="tool-btn" type="button">開始占卜</button>
-      <button id="btn-tarot-skip" class="tool-btn tool-btn-secondary" type="button">跳過，直接抽牌</button>
+
+      <p class="iching-hint quick-preset-hint">或快速抽牌</p>
+      <div class="quick-count-buttons">
+        <button class="quick-count-btn" type="button" data-count="1">抽一張</button>
+        <button class="quick-count-btn" type="button" data-count="3">抽三張</button>
+        <button class="quick-count-btn" type="button" data-count="5">抽五張</button>
+      </div>
     </section>
 
     <!-- ===================== 牌桌 ===================== -->
@@ -51,13 +57,15 @@
         <span class="draw-count">已抽 <span id="draw-count-num">0</span> 張</span>
       </section>
 
-      <section class="quick-draw-row">
-        <button id="btn-quick-draw-one" class="tool-btn tool-btn-secondary" type="button">快速抽一張</button>
-      </section>
-
       <section class="drawn-area">
         <h2 class="drawn-title">已抽出的牌</h2>
         <div id="drawn-cards" class="drawn-cards"></div>
+      </section>
+
+      <section id="quick-result-actions" class="quick-result-actions hidden">
+        <button id="btn-quick-again" class="tool-btn" type="button">再抽一次</button>
+        <button id="btn-quick-more" class="tool-btn" type="button">多抽一張</button>
+        <button id="btn-quick-back" class="tool-btn tool-btn-secondary" type="button">回到主選單</button>
       </section>
 
       <section id="deck-area" class="deck-area">

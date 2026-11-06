@@ -74,12 +74,6 @@ body {
   justify-content: center;
 }
 
-.quick-draw-row {
-  display: flex;
-  justify-content: center;
-  margin: -16px 0 24px;
-}
-
 .tool-btn {
   font-family: inherit;
   letter-spacing: 0.1em;
@@ -405,6 +399,28 @@ body {
   background: var(--ink);
   color: #fff;
   border-color: var(--ink);
+}
+
+.quick-preset-hint {
+  margin-top: 10px;
+}
+
+.quick-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 8px 0 28px;
+}
+
+.quick-result-actions.hidden { display: none; }
+
+/* 快速抽牌結果畫面：只留已抽出的牌跟操作按鈕，工具列跟牌桌都先不用看到 */
+#tarot-table-section.quick-result-mode .toolbar,
+#tarot-table-section.quick-result-mode #deck-area,
+#tarot-table-section.quick-result-mode #cut-area,
+#tarot-table-section.quick-result-mode #fan-area {
+  display: none;
 }
 
 .quick-count-custom {

@@ -6,18 +6,51 @@
   const tableSection = document.getElementById("tarot-table-section");
   const questionInput = document.getElementById("tarot-question");
   const btnStart = document.getElementById("btn-tarot-start");
-  const btnSkip = document.getElementById("btn-tarot-skip");
+  const quickResultActions = document.getElementById("quick-result-actions");
+  const btnQuickAgain = document.getElementById("btn-quick-again");
+  const btnQuickMore = document.getElementById("btn-quick-more");
+  const btnQuickBack = document.getElementById("btn-quick-back");
 
   function enterTable(question) {
     window.TarotState.question = question;
     questionSection.classList.add("hidden");
     tableSection.classList.remove("hidden");
+    tableSection.classList.remove("quick-result-mode");
+    quickResultActions.classList.add("hidden");
   }
 
   btnStart.addEventListener("click", () => enterTable(questionInput.value.trim()));
-  btnSkip.addEventListener("click", () => enterTable(""));
 
   initTarotTable();
+
+  // 首頁「抽一張／抽三張／抽五張」：直接進結果畫面，不用走完整牌桌
+  let lastQuickCount = 3;
+
+  function runQuickPreset(n) {
+    lastQuickCount = n;
+    window.TarotState.question = "";
+    questionSection.classList.add("hidden");
+    tableSection.classList.remove("hidden");
+    tableSection.classList.add("quick-result-mode");
+    quickResultActions.classList.remove("hidden");
+    window.TarotTable.quickDrawMany(n);
+  }
+
+  document.querySelectorAll("#tarot-question-section .quick-count-btn").forEach((btn) => {
+    btn.addEventListener("click", () => runQuickPreset(parseInt(btn.dataset.count, 10)));
+  });
+
+  btnQuickAgain.addEventListener("click", () => runQuickPreset(lastQuickCount));
+  btnQuickMore.addEventListener("click", () => {
+    const card = window.TarotTable.quickDrawOneMore();
+    if (!card) showToast("牌已經抽完囉，點「再抽一次」重新洗牌");
+  });
+  btnQuickBack.addEventListener("click", () => {
+    tableSection.classList.add("hidden");
+    tableSection.classList.remove("quick-result-mode");
+    quickResultActions.classList.add("hidden");
+    questionSection.classList.remove("hidden");
+  });
 
   document.querySelectorAll(".tool-btn-icon").forEach(attachLongPressTooltip);
 
