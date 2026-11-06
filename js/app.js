@@ -10,6 +10,7 @@
   const btnQuickAgain = document.getElementById("btn-quick-again");
   const btnQuickMore = document.getElementById("btn-quick-more");
   const btnQuickBack = document.getElementById("btn-quick-back");
+  const btnTableBack = document.getElementById("btn-table-back");
 
   function enterTable(question) {
     window.TarotState.question = question;
@@ -45,12 +46,19 @@
     const card = window.TarotTable.quickDrawOneMore();
     if (!card) showToast("牌已經抽完囉，點「再抽一次」重新洗牌");
   });
-  btnQuickBack.addEventListener("click", () => {
+
+  // 回到主選單：不管是從快速抽牌結果還是從正常牌桌回去，都要把抽牌結果清空，
+  // 不然下次再抽（無論走哪條路）畫面上會留著上一輪沒清掉的舊結果
+  function backToMainMenu() {
+    window.TarotTable.resetAll();
     tableSection.classList.add("hidden");
     tableSection.classList.remove("quick-result-mode");
     quickResultActions.classList.add("hidden");
     questionSection.classList.remove("hidden");
-  });
+  }
+
+  btnQuickBack.addEventListener("click", backToMainMenu);
+  btnTableBack.addEventListener("click", backToMainMenu);
 
   document.querySelectorAll(".tool-btn-icon").forEach(attachLongPressTooltip);
 

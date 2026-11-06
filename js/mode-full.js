@@ -116,10 +116,46 @@ function initTarotTable() {
   function setManualShuffle(on) {
     manualShuffleOn = on;
     btnShuffle.classList.toggle("active", on);
-    deckAreaEl.classList.toggle("shuffle-active", on);
     deckHintEl.textContent = on
       ? "按著牌堆滑動（手機用手指滑），牌會跟著你撥動的方向散開"
       : "洗好了，可以「整牌」收攏、「切牌」或直接「開扇」選牌";
+    if (on) startHinduShuffleLoop();
+    else stopHinduShuffleLoop();
+  }
+
+  // 「印度式洗牌」：牌堆最上面幾張輪流往上翹起再落下，像手在撥動牌一樣，
+  // 純粹是視覺提示「現在是洗牌模式」，牌堆本身的位置／容器大小完全不動，
+  // 直到使用者真的按著牌堆拖曳（manualShuffleOn但開始drag時）才停下來讓拖曳接手
+  let hinduShuffleTimer = null;
+
+  function playHinduShuffleFlourish() {
+    const liftCount = Math.min(10, scatterCards.length);
+    const topCards = scatterCards.slice(-liftCount);
+    topCards.forEach((c, i) => {
+      window.setTimeout(() => {
+        if (dragging) return; // 使用者已經開始手動拖曳，交給拖曳邏輯處理，不要搶著改transform
+        c.el.style.transition = "transform 0.16s ease-out";
+        c.el.style.transform = `translate(${c.baseOffset}px, ${c.baseOffset - 30}px) rotate(${(Math.random() - 0.5) * 12}deg)`;
+        window.setTimeout(() => {
+          if (dragging) return;
+          c.el.style.transition = "transform 0.22s ease-in";
+          c.el.style.transform = restTransform(c);
+        }, 150);
+      }, i * 60);
+    });
+  }
+
+  function startHinduShuffleLoop() {
+    stopHinduShuffleLoop();
+    playHinduShuffleFlourish();
+    hinduShuffleTimer = window.setInterval(playHinduShuffleFlourish, 650);
+  }
+
+  function stopHinduShuffleLoop() {
+    if (hinduShuffleTimer) {
+      window.clearInterval(hinduShuffleTimer);
+      hinduShuffleTimer = null;
+    }
   }
 
   function shuffleOnce() {
@@ -152,6 +188,7 @@ function initTarotTable() {
   deckStackEl.addEventListener("pointerdown", (e) => {
     if (!manualShuffleOn) return;
     e.preventDefault(); // 擋掉瀏覽器原生的圖片拖曳手勢，改用我們自己的散牌邏輯
+    stopHinduShuffleLoop(); // 真的開始手動拖曳了，印度式洗牌的自動小動畫先讓位
     dragging = true;
     lastX = e.clientX;
     lastY = e.clientY;
@@ -226,13 +263,20 @@ function initTarotTable() {
     const mid = (n - 1) / 2;
     const containerWidth = cutAreaEl.clientWidth || window.innerWidth;
     const cardWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--card-w")) || 90;
-    // 跟開扇一樣：間距依容器寬度縮放，讓整排牌剛好塞進畫面，不需要橫向捲軸
-    const spacing = Math.max(2, Math.min(14, (containerWidth - cardWidth) / Math.max(1, n - 1)));
+    // 跟開扇一樣：間距依容器寬度縮放，讓整排牌剛好塞進畫面，不需要橫向捲軸；
+    // 間距的上限拉大一點，看起來才不會比開扇還擠
+    const maxSpacing = containerWidth < 500 ? 10 : 22;
+    const spacing = Math.max(2, Math.min(maxSpacing, (containerWidth - cardWidth) / Math.max(1, n - 1)));
+    // 牌太多時光靠平移間距撐不開（會超出畫面變成橫向捲軸），所以跟開扇一樣
+    // 讓每張牌都帶一點點旋轉角度，視覺上才會有攤開的感覺而不是死板疊在一起
+    const angleStep = Math.min(1.4, 60 / n);
 
     cards.forEach((card, i) => {
       const el = document.createElement("div");
       el.className = "cut-card";
-      el.style.setProperty("--cut-x", `${(i - mid) * spacing}px`);
+      const offset = i - mid;
+      el.style.setProperty("--cut-x", `${offset * spacing}px`);
+      el.style.setProperty("--cut-rot", `${offset * angleStep}deg`);
       el.style.zIndex = String(i);
       const img = document.createElement("img");
       img.alt = "塔羅牌背";
@@ -393,4 +437,5 @@ function initTarotTable() {
   window.TarotTable = window.TarotTable || {};
   window.TarotTable.quickDrawMany = quickDrawMany;
   window.TarotTable.quickDrawOneMore = quickDrawOneMore;
+  window.TarotTable.resetAll = onResetClick;
 }

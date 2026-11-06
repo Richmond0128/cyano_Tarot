@@ -172,12 +172,6 @@ body {
   align-items: center;
   min-height: 220px;
   justify-content: center;
-  transition: min-height 0.25s ease;
-}
-
-/* 手搓洗牌時牌會散到很大的範圍，給牌桌多一點空間才不會被下面的內容擠到 */
-.deck-area.shuffle-active {
-  min-height: 480px;
 }
 
 .deck-stack {
@@ -302,6 +296,7 @@ body {
 
 .cut-card {
   --cut-x: 0px;
+  --cut-rot: 0deg;
   position: absolute;
   top: 10px;
   left: 50%;
@@ -312,12 +307,13 @@ body {
   overflow: hidden;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   cursor: pointer;
-  transform: translateX(var(--cut-x)) translateY(0);
+  transform-origin: bottom center;
+  transform: translateX(var(--cut-x)) translateY(0) rotate(var(--cut-rot));
   transition: transform 0.15s ease;
 }
 
 .cut-card:hover {
-  transform: translateX(var(--cut-x)) translateY(-10px);
+  transform: translateX(var(--cut-x)) translateY(-10px) rotate(var(--cut-rot));
 }
 
 .cut-card img { width: 100%; height: 100%; object-fit: cover; }
