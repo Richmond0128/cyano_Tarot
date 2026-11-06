@@ -4,6 +4,7 @@ function initFullMode() {
   const fullDeck = buildDeck();
   let order = shuffledCopy(fullDeck);
   const drawnIds = new Set();
+  const reversedIds = new Set(); // 手搓洗牌時會隨機把牌翻面，記住哪些牌現在是逆位
 
   const deckAreaEl = document.getElementById("full-deck-area");
   const deckStackEl = document.getElementById("full-deck-stack");
@@ -114,6 +115,15 @@ function initFullMode() {
     const kept = order.filter((c) => drawnIds.has(c.id));
     const rest = shuffledCopy(order.filter((c) => !drawnIds.has(c.id)));
     order = kept.concat(rest);
+
+    // 手搓洗牌的重點之一：牌堆裡的牌會被你翻來翻去，有些就這樣變成逆位。
+    // 每次洗牌對還沒抽出的牌各自有一點機率翻面，洗越多次、正逆位混得越均勻
+    rest.forEach((card) => {
+      if (Math.random() < 0.18) {
+        if (reversedIds.has(card.id)) reversedIds.delete(card.id);
+        else reversedIds.add(card.id);
+      }
+    });
   }
 
   function onShuffleClick() {
@@ -276,7 +286,7 @@ function initFullMode() {
     window.setTimeout(() => {
       el.classList.add("drawn");
       drawnIds.add(card.id);
-      drawnCardsEl.appendChild(createDrawnTile(card));
+      drawnCardsEl.appendChild(createDrawnTile(card, reversedIds.has(card.id)));
       drawCountEl.textContent = String(drawnIds.size);
 
       if (remainingCards().length === 0) {
@@ -289,6 +299,7 @@ function initFullMode() {
   function onResetClick() {
     order = shuffledCopy(fullDeck);
     drawnIds.clear();
+    reversedIds.clear();
     drawCountEl.textContent = "0";
     drawnCardsEl.innerHTML = "";
     setManualShuffle(false);

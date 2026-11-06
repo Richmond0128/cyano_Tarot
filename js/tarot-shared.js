@@ -54,7 +54,7 @@ function renderFanLayout(containerEl, cards, animate) {
   if (n === 0) return [];
 
   const mid = (n - 1) / 2;
-  const angleStep = Math.min(2.5, 160 / n); // 保留弧度，不動旋轉角度
+  const angleStep = Math.min(2.5, 160 / n); // 牌與牌之間的旋轉角度，讓每張牌還是有扇開的感覺
   const containerWidth = containerEl.clientWidth || window.innerWidth;
   const cardWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--card-w")) || 90;
   const maxSpacing = containerWidth < 500 ? 6 : 11;
@@ -67,8 +67,8 @@ function renderFanLayout(containerEl, cards, animate) {
     const offset = i - mid;
     const angle = offset * angleStep;
     const x = offset * spacing;
-    const y = Math.pow(offset / (mid || 1), 2) * 18;
-    const finalTransform = `translateX(${x}px) translateY(${y}px) rotate(${angle}deg)`;
+    // 不追求弧度了，牌的底邊排成一直線，只靠旋轉角度做出展開的感覺
+    const finalTransform = `translateX(${x}px) rotate(${angle}deg)`;
 
     const el = document.createElement("div");
     el.className = "fan-card";
@@ -76,14 +76,14 @@ function renderFanLayout(containerEl, cards, animate) {
     el.style.zIndex = String(i + 1);
 
     if (animate) {
-      el.style.transform = "translateX(0px) translateY(0px) rotate(0deg)";
+      el.style.transform = "translateX(0px) rotate(0deg)";
       el.style.transition = "transform 0.32s cubic-bezier(.2,.7,.3,1)";
       el.style.transitionDelay = `${Math.min(i, 60) * 4}ms`;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          el.style.transform = finalTransform;
-        });
-      });
+      // 用 setTimeout 而不是 requestAnimationFrame 來觸發展開：分頁被切到背景、
+      // 畫面沒有在重繪時，rAF 可能完全不會執行，牌就會卡在收合狀態動不了
+      window.setTimeout(() => {
+        el.style.transform = finalTransform;
+      }, 20);
     } else {
       el.style.transform = finalTransform;
     }
