@@ -811,6 +811,221 @@ body {
   font-weight: bold;
 }
 
+/* ---- 底部彈出面板（起卦方式選擇／AI解卦提示詞共用） ---- */
+
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 34, 64, 0);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+.sheet-overlay.open {
+  background: rgba(28, 34, 64, 0.45);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet-panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+.sheet-overlay.open .sheet-panel {
+  transform: translateY(0);
+}
+
+.sheet-title {
+  margin: 0 0 14px;
+  text-align: center;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+}
+
+.sheet-cancel {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.cast-method-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #cfccc2;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.cast-method-option:hover { border-color: var(--gold); background: #fffaf0; }
+
+.cast-method-icon { font-size: 1.6rem; }
+
+.cast-method-text { display: flex; flex-direction: column; gap: 2px; }
+.cast-method-name { font-size: 1rem; letter-spacing: 0.05em; color: var(--ink); }
+.cast-method-desc { font-size: 0.8rem; color: var(--ink-soft); }
+
+/* ---- 逐爻投擲 ---- */
+
+.manual-cast-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.forming-list {
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  border: 1px solid #cfccc2;
+  border-radius: 12px;
+  padding: 6px 16px;
+}
+
+.forming-title {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  margin: 10px 0;
+}
+
+.forming-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 90px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ece9e0;
+}
+.forming-row:last-child { border-bottom: none; }
+
+.forming-label {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.forming-icon {
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+}
+
+.forming-state {
+  font-size: 0.85rem;
+  text-align: right;
+}
+.forming-state.unrevealed { color: #c9c7c0; }
+.forming-state.yin, .forming-icon.yin { color: #c0472f; }
+.forming-state.yang, .forming-icon.yang { color: var(--ink); }
+.forming-state.changing { font-weight: bold; }
+
+.forming-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  padding: 0 5px;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+.manual-result-card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #cfccc2;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.manual-result-coins { gap: 10px; }
+.coin-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(184, 146, 63, 0.4);
+}
+
+/* ---- AI解卦提示詞 ---- */
+
+.ai-prompt-btn { margin-top: 12px; }
+
+.ai-prompt-preview {
+  width: 100%;
+  min-height: 260px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  padding: 12px;
+  border: 1px solid #cfccc2;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  resize: vertical;
+  white-space: pre-wrap;
+  margin-bottom: 14px;
+}
+
+.ai-prompt-actions {
+  display: flex;
+  gap: 10px;
+}
+.ai-prompt-actions .tool-btn { flex: 1; padding: 10px 12px; }
+
+.iching-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translate(-50%, 12px);
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 200;
+  max-width: 90vw;
+  text-align: center;
+}
+.iching-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 /* ---- AI 解牌（先只做按鈕，功能之後再接） ---- */
 
 .ai-interpret-btn {
