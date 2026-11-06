@@ -6,7 +6,6 @@
   const tableSection = document.getElementById("tarot-table-section");
   const questionInput = document.getElementById("tarot-question");
   const btnStart = document.getElementById("btn-tarot-start");
-  const btnSkip = document.getElementById("btn-tarot-skip");
   const quickResultActions = document.getElementById("quick-result-actions");
   const btnQuickAgain = document.getElementById("btn-quick-again");
   const btnQuickMore = document.getElementById("btn-quick-more");
@@ -21,7 +20,6 @@
   }
 
   btnStart.addEventListener("click", () => enterTable(questionInput.value.trim()));
-  btnSkip.addEventListener("click", () => enterTable(""));
 
   initTarotTable();
 
