@@ -473,6 +473,51 @@ body {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* 正式流程（非快速抽牌結果畫面）在夠寬的螢幕上：工具列集中收到左側一欄，
+   省下來的版面都讓給牌本身，牌也跟著放大，比照望遠鏡那種「工具在旁邊、
+   牌是主角」的版面配置 */
+@media (min-width: 700px) {
+  :root { --card-w: 130px; --card-h: 221px; }
+
+  #tarot-table-section:not(.quick-result-mode) {
+    padding-left: 128px;
+  }
+
+  #tarot-table-section .toolbar {
+    position: fixed;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 92px;
+    margin: 0;
+    padding: 20px 10px;
+    gap: 14px;
+    background: #fff;
+    border-radius: 26px;
+    box-shadow: 0 6px 24px rgba(28, 34, 64, 0.12);
+    z-index: 40;
+  }
+
+  #tarot-table-section .toolbar .draw-count {
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  #tarot-table-section .toolbar #btn-table-back {
+    padding: 10px 8px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .deck-area { min-height: 260px; }
+  .cut-area { min-height: 220px; }
+  .fan-area { height: 320px; }
+
+  .drawn-card { width: 150px; }
+}
+
 @media (max-width: 600px) {
   :root { --card-w: 62px; --card-h: 106px; }
 
