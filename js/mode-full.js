@@ -65,7 +65,9 @@ function initTarotTable() {
     scatterCards.forEach((c) => {
       c.spread = (Math.random() - 0.5) * Math.PI * 1.3; // 以撥動方向為中心，左右各偏最多約117度
       c.reach = 0.5 + Math.random() * 0.5;
-      c.rot = (Math.random() - 0.5) * 80;
+      // 角度拉到接近正負180度，散開時才會有些牌看起來像被搓到倒轉過去，
+      // 搓牌本來就該讓正逆位被翻動，不是只有悄悄換內部狀態而已
+      c.rot = (Math.random() - 0.5) * 340;
     });
   }
 
