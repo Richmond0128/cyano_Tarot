@@ -137,6 +137,11 @@ body {
   color: var(--ink);
 }
 #btn-table-back:hover { background: #f1efe8; }
+/* 房子符號本身占圓圈的比例拉大一點，比其他工具圖示更明顯、好辨識 */
+#btn-table-back svg {
+  width: 20px;
+  height: 20px;
+}
 
 /* 工具列固定在左側，牌桌本身的內容要讓出這塊寬度，不然會疊在工具列下面 */
 #tarot-table-section:not(.quick-result-mode) {
@@ -526,6 +531,11 @@ body {
     height: 17px;
   }
 
+  #btn-table-back svg {
+    width: 23px;
+    height: 23px;
+  }
+
   .toolbar .draw-count {
     font-size: 0.78rem;
   }
@@ -572,6 +582,7 @@ body {
   .toolbar { left: 6px; gap: 6px; }
   .toolbar .tool-btn-icon { width: 28px; height: 28px; }
   .toolbar .tool-btn-icon svg { width: 13px; height: 13px; }
+  #btn-table-back svg { width: 18px; height: 18px; }
 }
 
 /* larger touch targets on touch devices, no hover state to rely on */
