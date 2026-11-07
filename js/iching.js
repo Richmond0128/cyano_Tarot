@@ -74,25 +74,6 @@
     return tosses;
   }
 
-  // 逐爻投擲用：一次只決定一爻，但仍要讓6次下來動爻總數剛好等於 forcedCount
-  // （序列式抽樣：第i爻是動爻的機率 = 剩下還要幾個動爻 / 剩下還有幾爻沒擲）
-  function createChangingPlanner(forcedCount) {
-    let remainingSlots = 6;
-    let remainingNeeded = forcedCount;
-    return function next() {
-      const changing = Math.random() < remainingNeeded / remainingSlots;
-      remainingSlots -= 1;
-      if (changing) remainingNeeded -= 1;
-      return changing;
-    };
-  }
-
-  function tossLineForManual(planner) {
-    if (!planner) return tossLine();
-    const changing = planner();
-    const value = changing ? (Math.random() < 0.5 ? 6 : 9) : Math.random() < 0.5 ? 7 : 8;
-    return { value, faces: facesForValue(value) };
-  }
 
   function binaryOf(lines, transform) {
     return lines
@@ -188,8 +169,10 @@
     };
   }
 
-  function castHexagram(question) {
-    const forcedCount = detectTestChangingCount(question || "");
+  // allowTestOverride：只有「快速取卦」這個開發測試用的入口才允許數字0~6強制動爻數，
+  // 開始起卦（一鍵搖卦／逐爻投擲）一律當成真正的問題，不管打了什麼都是真隨機
+  function castHexagram(question, allowTestOverride) {
+    const forcedCount = allowTestOverride ? detectTestChangingCount(question || "") : null;
     const tosses = forcedCount === null ? castLines() : castLinesWithChangingCount(forcedCount);
     return buildResult(question, tosses, "auto");
   }
@@ -670,12 +653,12 @@
     openSheet(content);
   }
 
-  async function castAndAnimate(question) {
+  async function castAndAnimate(question, allowTestOverride) {
     btnCast.disabled = true;
     if (btnQuickCast) btnQuickCast.disabled = true;
     if (manualSectionEl) manualSectionEl.classList.add("hidden");
 
-    const result = castHexagram(question);
+    const result = castHexagram(question, allowTestOverride);
 
     resultEl.innerHTML = "";
     resultEl.classList.remove("hidden");
@@ -863,13 +846,12 @@
   }
 
   // ---- 逐爻投擲：一次一爻，按一下「第N次投擲」才擲那一爻 ----
+  // 這條路徑是開始起卦走的，不是快速取卦，一律真隨機，不套用數字測試機關
   function startManualCasting(question) {
     resultEl.classList.add("hidden");
     manualSectionEl.innerHTML = "";
     manualSectionEl.classList.remove("hidden");
 
-    const forcedCount = detectTestChangingCount(question || "");
-    const planner = forcedCount === null ? null : createChangingPlanner(forcedCount);
     const tosses = [];
 
     const qP = document.createElement("p");
@@ -905,7 +887,7 @@
     tossBtn.addEventListener("click", async () => {
       tossBtn.disabled = true; // 投擲動畫播放中不能按，播完才又能按（或結束流程）
 
-      const toss = tossLineForManual(planner);
+      const toss = tossLine();
       tosses.push(toss);
       const idx = tosses.length - 1;
 
@@ -1018,7 +1000,9 @@
 
   if (btnQuickCast) {
     btnQuickCast.addEventListener("click", () => {
-      castAndAnimate(""); // 快速取卦：不管問題欄位寫什麼，就是不用填問題也能起卦
+      // 快速取卦：問題欄位沒填也能按，有填（含測試用的0~6數字）就照用。
+      // 數字強制動爻數這個測試機關只保證在「快速取卦」這條路徑生效，開始起卦（一鍵搖卦／逐爻投擲）一律真隨機。
+      castAndAnimate(questionInput.value.trim(), true);
     });
   }
 })();
