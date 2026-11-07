@@ -34,22 +34,12 @@
     return tosses;
   }
 
-  // 開發測試用：問題欄位打「N變爻」或「不變」時，強制擲出剛好N個動爻（哪幾爻動、陰陽仍隨機）
-  const TEST_CHANGING_COUNT_PATTERNS = [
-    { pattern: /不變/, count: 0 },
-    { pattern: /一變爻/, count: 1 },
-    { pattern: /二變爻/, count: 2 },
-    { pattern: /三變爻/, count: 3 },
-    { pattern: /四變爻/, count: 4 },
-    { pattern: /五變爻/, count: 5 },
-    { pattern: /六變爻/, count: 6 },
-  ];
-
+  // 開發測試用：問題欄位「只填一個數字0~6、沒有其他任何內容」時，強制擲出剛好N個動爻
+  // （哪幾爻動、陰陽仍隨機）。有多打任何字都不算，當一般問題處理。
   function detectTestChangingCount(question) {
-    for (const { pattern, count } of TEST_CHANGING_COUNT_PATTERNS) {
-      if (pattern.test(question)) return count;
-    }
-    return null;
+    const trimmed = (question || "").trim();
+    if (!/^[0-6]$/.test(trimmed)) return null;
+    return Number(trimmed);
   }
 
   // 從 0..size-1 隨機挑出 count 個索引
