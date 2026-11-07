@@ -778,10 +778,23 @@ body {
 
 .yao-line {
   font-size: 1.1rem;
-  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
-.yao-line.yin { letter-spacing: normal; }
 .yao-line.changed { color: var(--gold); }
+
+/* 爻線圖示：陽爻＝一條完整直線，陰爻＝中間斷開的兩段 */
+.yao-bar {
+  display: inline-block;
+  width: 56px;
+  height: 7px;
+  vertical-align: middle;
+  background: currentColor;
+}
+.yao-bar.yin {
+  background: linear-gradient(to right, currentColor 0 42%, transparent 42% 58%, currentColor 58% 100%);
+}
 
 .yao-mark {
   color: var(--gold);
@@ -969,7 +982,9 @@ body {
 
 .forming-icon {
   font-size: 1.1rem;
-  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .forming-state {
