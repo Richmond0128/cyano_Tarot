@@ -67,7 +67,8 @@ function renderFanLayout(containerEl, cards, animate) {
   const maxEdgeAngleRad = (mid * angleStep * Math.PI) / 180;
   const edgeBoundingHalfWidth =
     (cardWidth / 2) * Math.cos(maxEdgeAngleRad) + cardHeight * Math.sin(maxEdgeAngleRad);
-  const availableHalfWidth = containerWidth / 2 - edgeBoundingHalfWidth;
+  // 乘0.96留一點安全margin，蓋掉次像素捨入誤差，不要讓邊緣牌剛好卡在容器邊界上
+  const availableHalfWidth = (containerWidth / 2 - edgeBoundingHalfWidth) * 0.96;
   const spacing = Math.min(maxSpacing, Math.max(2, availableHalfWidth / Math.max(1, mid)));
   // 整條牌還是橫向排列（左到右），但底線改成一個緩緩的S彎，不是死板的直線，
   // 也不是左右對稱隆起的弧形——一端略高、一端略低，中間平滑過渡；振幅放緩一點
