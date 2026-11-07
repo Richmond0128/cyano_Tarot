@@ -130,10 +130,12 @@
       };
     }
     if (count === 2) {
-      const idx = Math.max(...changingIndices);
+      const upperIdx = Math.max(...changingIndices);
+      const lowerIdx = Math.min(...changingIndices);
       return {
-        rule: "二爻變：以本卦兩動爻中較上一爻的爻辭為斷",
-        primary: { source: `本卦 ${originalHex.yao[idx].label}`, text: originalHex.yao[idx].text },
+        rule: "二爻變：以本卦兩動爻中較上一爻的爻辭為斷，下爻為輔助參考",
+        primary: { source: `本卦 ${originalHex.yao[upperIdx].label}（主）`, text: originalHex.yao[upperIdx].text },
+        secondary: { source: `本卦 ${originalHex.yao[lowerIdx].label}（輔）`, text: originalHex.yao[lowerIdx].text },
       };
     }
     if (count === 3) {
@@ -144,10 +146,12 @@
       };
     }
     if (count === 4) {
-      const idx = Math.min(...unchanged);
+      const lowerIdx = Math.min(...unchanged);
+      const upperIdx = Math.max(...unchanged);
       return {
-        rule: "四爻變：以之卦兩個不變爻中較下一爻的爻辭為斷",
-        primary: { source: `之卦 ${transformedHex.yao[idx].label}`, text: transformedHex.yao[idx].text },
+        rule: "四爻變：以之卦兩個不變爻中較下一爻的爻辭為斷，上爻為輔助參考",
+        primary: { source: `之卦 ${transformedHex.yao[lowerIdx].label}（主）`, text: transformedHex.yao[lowerIdx].text },
+        secondary: { source: `之卦 ${transformedHex.yao[upperIdx].label}（輔）`, text: transformedHex.yao[upperIdx].text },
       };
     }
     if (count === 5) {
@@ -289,12 +293,18 @@
     return row;
   }
 
+  // 爻線圖示：陽爻畫成一條完整直線，陰爻畫成中間斷開的兩段——用CSS色塊畫，不要用字元湊
+  function yaoBarHtml(yang, mark) {
+    const bar = `<span class="yao-bar ${yang ? "yang" : "yin"}"></span>`;
+    return bar + (mark ? ` <b class="yao-mark">${mark}</b>` : "");
+  }
+
   // 第一階段：只亮出本卦這一爻，之卦欄位留著不動
   function fillOriginalCell(row, lineValue) {
     const info = lineSymbolLabel(lineValue);
     const originalCell = row.querySelectorAll(".yao-line")[0];
     originalCell.className = "yao-line " + (info.yang ? "yang" : "yin");
-    originalCell.innerHTML = (info.yang ? "━━━━" : "━━&nbsp;&nbsp;━━") + (info.mark ? ` <b class="yao-mark">${info.mark}</b>` : "");
+    originalCell.innerHTML = yaoBarHtml(info.yang, info.mark);
     row.classList.add("revealed");
   }
 
@@ -305,7 +315,7 @@
     const transformedCell = row.querySelectorAll(".yao-line")[1];
     transformedCell.className =
       "yao-line fade-in " + (transformedYang ? "yang" : "yin") + (isChanging(lineValue) ? " changed" : " unchanged");
-    transformedCell.innerHTML = transformedYang ? "━━━━" : "━━&nbsp;&nbsp;━━";
+    transformedCell.innerHTML = yaoBarHtml(transformedYang, null);
   }
 
   // 3枚銅錢的擲卦動畫：先翻轉，停下來後亮出這一爻的正反面與陰陽
@@ -437,7 +447,7 @@
     const colorCls = info.yang ? "yang" : "yin";
     const changing = isChanging(value);
 
-    iconEl.innerHTML = (info.yang ? "━━━━" : "━━&nbsp;&nbsp;━━") + (info.mark ? ` <b class="yao-mark">${info.mark}</b>` : "");
+    iconEl.innerHTML = yaoBarHtml(info.yang, info.mark);
     iconEl.className = "forming-icon " + colorCls;
 
     stateEl.innerHTML = info.name + (changing ? ' <span class="forming-badge">動</span>' : "");
