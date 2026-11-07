@@ -54,15 +54,24 @@ function renderFanLayout(containerEl, cards, animate) {
   if (n === 0) return [];
 
   const mid = (n - 1) / 2;
-  const angleStep = Math.min(2.5, 160 / n); // 牌與牌之間的旋轉角度，讓每張牌還是有扇開的感覺
+  const angleStep = Math.min(0.9, 70 / n); // 牌與牌之間的旋轉角度，放緩一點，選牌時比較不會眼花
   const containerWidth = containerEl.clientWidth || window.innerWidth;
   const cardWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--card-w")) || 90;
-  const maxSpacing = containerWidth < 500 ? 6 : 11;
-  // 扇形總寬度（卡片寬度 + 牌與牌的間距總和）要留在容器內，才不會讓頁面出現橫向捲軸
-  const spacing = Math.min(maxSpacing, Math.max(2, ((containerWidth - cardWidth) * 0.92) / n));
+  const cardHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--card-h")) || 153;
+  const maxSpacing = containerWidth < 500 ? 5 : 9;
+  // 扇形總寬度（卡片寬度 + 牌與牌的間距總和）要留在容器內，才不會讓頁面出現橫向捲軸；
+  // 邊緣那幾張牌因為有旋轉角度，實際佔的寬度比卡片本身寬（旋轉後的外接矩形），
+  // 所以這裡要連旋轉角度一起算進可用寬度，不然邊緣的牌會被撐出容器外。
+  // 牌是繞「底部中心」旋轉的（.fan-card 的 transform-origin），不是繞卡片正中心，
+  // 所以旋轉後往外凸出的量是 半張牌寬*cos + 整張牌高*sin，高度要算全長而不是一半
+  const maxEdgeAngleRad = (mid * angleStep * Math.PI) / 180;
+  const edgeBoundingHalfWidth =
+    (cardWidth / 2) * Math.cos(maxEdgeAngleRad) + cardHeight * Math.sin(maxEdgeAngleRad);
+  const availableHalfWidth = containerWidth / 2 - edgeBoundingHalfWidth;
+  const spacing = Math.min(maxSpacing, Math.max(2, availableHalfWidth / Math.max(1, mid)));
   // 整條牌還是橫向排列（左到右），但底線改成一個緩緩的S彎，不是死板的直線，
-  // 也不是左右對稱隆起的弧形——一端略高、一端略低，中間平滑過渡
-  const waveAmplitude = containerWidth < 500 ? 20 : 38;
+  // 也不是左右對稱隆起的弧形——一端略高、一端略低，中間平滑過渡；振幅放緩一點
+  const waveAmplitude = containerWidth < 500 ? 14 : 24;
 
   const entries = [];
 
