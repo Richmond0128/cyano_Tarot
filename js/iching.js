@@ -1018,7 +1018,8 @@
 
   if (btnQuickCast) {
     btnQuickCast.addEventListener("click", () => {
-      castAndAnimate(""); // 快速取卦：不管問題欄位寫什麼，就是不用填問題也能起卦
+      // 快速取卦：問題欄位沒填也能按，但有填（含測試用的0~6數字）還是會照用，不會被silently丟掉
+      castAndAnimate(questionInput.value.trim());
     });
   }
 })();
