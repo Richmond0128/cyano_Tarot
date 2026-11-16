@@ -393,20 +393,35 @@ body {
 
 .drawn-card.reversed .drawn-card-img { transform: rotate(180deg); }
 
-/* 快速抽牌結果畫面在牌出現前顯示的「正在抽牌」提示，淡入淡出反覆呼吸 */
-.quick-draw-ritual {
+/* 快速抽牌結果畫面在牌出現前顯示的洗牌動畫：幾張牌背交錯晃動，
+   做出「正在洗牌抽牌」的感覺，取代原本死板的文字提示 */
+.quick-draw-shuffle {
   width: 100%;
-  text-align: center;
-  color: var(--ink-soft);
-  letter-spacing: 0.3em;
-  font-size: 0.9rem;
-  padding: 24px 0;
-  animation: ritual-pulse 1.6s ease-in-out infinite;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 160px;
+  margin: 10px 0 30px;
 }
 
-@keyframes ritual-pulse {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 0.9; }
+.quick-shuffle-card {
+  width: 70px;
+  margin: 0 -14px;
+  animation: quick-shuffle-wiggle 1.1s ease-in-out infinite;
+}
+
+.quick-shuffle-card img {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+
+@keyframes quick-shuffle-wiggle {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-14px) rotate(-7deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-8px) rotate(7deg); }
 }
 
 /* ---- 快速版 ---- */
