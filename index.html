@@ -6,7 +6,21 @@
 <title>塔羅占卜</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="theme-tarot">
+
+  <div class="mystic-glow"></div>
+  <div class="star-field" aria-hidden="true">
+    <div class="star-dot layer-far"></div>
+    <div class="star-dot layer-near"></div>
+    <span class="sparkle" style="top:9%; left:14%; font-size:11px; animation-delay:0s;">✦</span>
+    <span class="sparkle lavender" style="top:16%; left:76%; font-size:8px; animation-delay:0.6s;">✦</span>
+    <span class="sparkle" style="top:28%; left:91%; font-size:7px; animation-delay:1.2s;">✦</span>
+    <span class="sparkle lavender" style="top:48%; left:6%; font-size:9px; animation-delay:1.8s;">✦</span>
+    <span class="sparkle" style="top:62%; left:93%; font-size:10px; animation-delay:0.3s;">✦</span>
+    <span class="sparkle lavender" style="top:78%; left:18%; font-size:7px; animation-delay:2.1s;">✦</span>
+    <span class="sparkle" style="top:85%; left:84%; font-size:9px; animation-delay:1.5s;">✦</span>
+    <span class="sparkle lavender" style="top:5%; left:52%; font-size:6px; animation-delay:2.6s;">✦</span>
+  </div>
 
   <a href="iching.html" class="page-switch page-switch-coin" title="金錢卦起卦" aria-label="切換到金錢卦起卦">
     <img src="assets/iching/coins/天錢-正面-八卦-icon.png" alt="" class="page-switch-icon" />
@@ -89,6 +103,7 @@
     <span>AI 解牌</span>
   </button>
 
+  <script src="js/star-field.js"></script>
   <script src="js/cards.js"></script>
   <script src="js/tarot-shared.js"></script>
   <script src="js/mode-full.js"></script>
