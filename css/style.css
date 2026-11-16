@@ -393,6 +393,22 @@ body {
 
 .drawn-card.reversed .drawn-card-img { transform: rotate(180deg); }
 
+/* 快速抽牌結果畫面在牌出現前顯示的「正在抽牌」提示，淡入淡出反覆呼吸 */
+.quick-draw-ritual {
+  width: 100%;
+  text-align: center;
+  color: var(--ink-soft);
+  letter-spacing: 0.3em;
+  font-size: 0.9rem;
+  padding: 24px 0;
+  animation: ritual-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ritual-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.9; }
+}
+
 /* ---- 快速版 ---- */
 
 .quick-setup {
