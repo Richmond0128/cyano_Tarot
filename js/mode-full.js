@@ -405,11 +405,21 @@ function initTarotTable() {
 
     const count = Math.min(n, remainingCards().length);
 
-    // 快速抽牌結果畫面看不到牌桌本身，牌出現前加個簡單的「正在抽牌」提示，
-    // 等待的那幾秒才不會像整頁空白卡住
+    // 快速抽牌結果畫面看不到牌桌本身，牌出現前放幾張牌背輪流晃動，
+    // 做出洗牌的感覺，等待的那幾秒才不會像整頁空白卡住
     const ritualEl = document.createElement("div");
-    ritualEl.className = "quick-draw-ritual";
-    ritualEl.textContent = "正在抽牌…";
+    ritualEl.className = "quick-draw-shuffle";
+    for (let s = 0; s < 3; s++) {
+      const shuffleCard = document.createElement("div");
+      shuffleCard.className = "quick-shuffle-card";
+      shuffleCard.style.animationDelay = `${s * 0.18}s`;
+      const shuffleImg = document.createElement("img");
+      shuffleImg.alt = "塔羅牌背";
+      makeImageNonDraggable(shuffleImg);
+      loadImageWithRetry(shuffleImg, CARD_BACK_IMAGE);
+      shuffleCard.appendChild(shuffleImg);
+      ritualEl.appendChild(shuffleCard);
+    }
     drawnCardsEl.appendChild(ritualEl);
 
     // 原本幾乎是一次抽完（每張只隔180ms），改成拉長到約5秒、一張一張慢慢出現，
